@@ -292,13 +292,26 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
         allow(controller).to receive(:action_has_layout?).and_return(false)
       end
 
-      it 'renders the component if present' do
+      it 'calls toastified_render with component when present' do
+        # Allow toastified_render to actually run (don't stub it completely)
+        allow(controller).to receive(:render).and_return('')
+        turbo_stream_double = double('TurboStream')
+        allow(turbo_stream_double).to receive(:append).and_return('<turbo-stream></turbo-stream>')
+        allow(controller).to receive(:turbo_stream).and_return(turbo_stream_double)
+        format_double = double('Format')
+        allow(format_double).to receive(:html).and_yield
+        allow(format_double).to receive(:turbo_stream).and_yield
+        allow(controller).to receive(:respond_to).and_yield(format_double)
+
         # Call the method directly to avoid template lookup
         controller.instance_eval do
           toastified_turbo_frame(component: :index, notice: 'Frame action')
         end
-        # When turbo_frame_request? is true, kwargs are passed directly to render (not extracted)
-        expect(controller).to have_received(:render).with(:index, hash_including(notice: 'Frame action'))
+
+        # toastified_render extracts notice from kwargs and sets it in flash
+        expect(flash.now[:notice]).to eq(['Frame action'])
+        # Verify render was called through toastified_render
+        expect(controller).to have_received(:render).at_least(:once)
       end
 
       it 'calls toastified_render if component is not present' do

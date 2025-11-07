@@ -19,11 +19,12 @@ module TurboToastifier
                      :DEFAULT_FALLBACK
 
     def toast_types
-      @toast_types ||= if defined?(ApplicationController) && ApplicationController.respond_to?(:_flash_types, true)
-                         ApplicationController.send(:_flash_types)
-                       else
-                         DEFAULT_TOAST_TYPES
-                       end
+      @toast_types ||=
+        if defined?(ApplicationController) && ApplicationController.respond_to?(:_flash_types, true)
+          ApplicationController.send(:_flash_types)
+        else
+          DEFAULT_TOAST_TYPES
+        end
     end
 
     private
@@ -58,7 +59,7 @@ module TurboToastifier
     def toastified_turbo_frame(component: nil, fallback: {}, **kwargs)
       if turbo_frame_request?
         if component.present?
-          render component, **kwargs
+          toastified_render(component, **kwargs)
         else
           toastified_render(**kwargs)
         end
