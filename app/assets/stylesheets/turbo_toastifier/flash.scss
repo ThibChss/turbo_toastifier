@@ -1,0 +1,67 @@
+// Flash messages container and items
+.flash {
+  position: fixed;
+  top: 8.5rem;
+  right: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  max-width: 93%;
+  width: max-content;
+  gap: 10px;
+  z-index: 2000;
+  transition: top 0.3s ease;
+
+  // Reduce top position when scrolling
+  &.scrolled {
+    top: 1rem;
+  }
+
+  &__message {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #333;
+    background: #fff;
+    padding: 0.6rem 1rem;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0.2px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.06);
+    animation: slide-in-then-fade 4s both;
+  }
+
+  &__message.--notice {
+    border-left: 4px solid #007bff;
+  }
+
+  &__message.--alert {
+    border-left: 4px solid #dc3545;
+  }
+
+  &__message.--warning {
+    border-left: 4px solid #ffc107;
+  }
+}
+
+@keyframes slide-in-then-fade {
+  0% {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  10% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  70% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
