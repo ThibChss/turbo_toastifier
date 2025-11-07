@@ -51,25 +51,15 @@ Or if using a CSS manifest:
  */
 ```
 
-### 3. Import the JavaScript (if using importmap)
+### 3. Import the JavaScript
 
-If you're using importmap, add to your `config/importmap.rb`:
-
-```ruby
-pin 'turbo_toastifier', to: 'turbo_toastifier.js'
-```
-
-Then import in your main JavaScript file:
+The gem's JavaScript files should be automatically available through Rails' asset pipeline. Import in your main JavaScript file:
 
 ```javascript
 import 'turbo_toastifier'
 ```
 
-If you're using a bundler (esbuild, webpack, etc.), import the JavaScript file directly:
-
-```javascript
-import 'turbo_toastifier'
-```
+**Note for Rails 8 users:** If you encounter issues with importmap paths, the JavaScript files are still accessible through the asset pipeline. Manual importmap configuration is typically not required.
 
 ## Usage
 

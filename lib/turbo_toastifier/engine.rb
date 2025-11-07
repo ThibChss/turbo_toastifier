@@ -23,10 +23,8 @@ module TurboToastifier
       end
     end
 
-    initializer 'turbo_toastifier.stimulus' do |app|
-      if defined?(Importmap)
-        app.config.importmap.paths << root.join('app', 'assets', 'javascript').to_s
-      end
-    end
+    # NOTE: Importmap paths configuration is handled manually by users
+    # In Rails 8, importmap.paths is frozen, so we can't modify it automatically.
+    # Users should add the path manually in their config/importmap.rb if needed.
   end
 end
