@@ -10,6 +10,8 @@ A Rails gem for beautiful toast notifications using Turbo Streams and Stimulus c
 - ⚡ Stimulus controllers for smooth interactions
 - 🎯 Simple API with helper methods
 - 🔧 Easy to customize styles
+- ⏸️ Pause on hover - messages pause their animation when hovered
+- 📋 Queue system - messages only start disappearing after the first one is removed
 
 ## Installation
 
@@ -53,13 +55,31 @@ Or if using a CSS manifest:
 
 ### 3. Import the JavaScript
 
-The gem's JavaScript files should be automatically available through Rails' asset pipeline. Import in your main JavaScript file:
+#### If using importmap
+
+The gem bundles all controllers into a single file to avoid import path issues. Simply add to your `config/importmap.rb`:
+
+```ruby
+pin 'turbo_toastifier', to: 'turbo_toastifier.js'
+```
+
+Then in your main JavaScript file (e.g., `app/javascript/application.js`):
 
 ```javascript
 import 'turbo_toastifier'
 ```
 
-**Note for Rails 8 users:** If you encounter issues with importmap paths, the JavaScript files are still accessible through the asset pipeline. Manual importmap configuration is typically not required.
+The controllers will be automatically registered with Stimulus. The gem will try to find the Stimulus application via `window.application` or `window.Stimulus`.
+
+**Note:** Make sure `@hotwired/stimulus` is already pinned in your importmap (it should be by default in Rails 7+).
+
+#### If using a bundler (esbuild, webpack, etc.)
+
+Import the JavaScript file directly:
+
+```javascript
+import 'turbo_toastifier'
+```
 
 ## Usage
 
@@ -263,6 +283,13 @@ You can override the default styles by importing the gem's styles first, then ad
 ```
 
 **Important:** Make sure your custom styles are imported **after** `@import 'turbo_toastifier';` so they can override the default styles. If your styles still don't apply, you may need to increase specificity or use `!important` for specific properties.
+
+### Behavior
+
+The gem includes smart queue management and hover behavior:
+
+- **Queue System**: Messages only start their auto-removal animation after the first message in the list has been removed. This prevents multiple messages from disappearing simultaneously.
+- **Hover to Pause**: When you hover over a message, its animation pauses, allowing you to read it without it disappearing. The animation resumes when you move your mouse away.
 
 ## Development
 
