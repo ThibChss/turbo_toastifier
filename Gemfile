@@ -18,4 +18,5 @@ group :test do
   gem 'actionpack', '>= 7.0'
   gem 'actionview', '>= 7.0'
   gem 'railties', '>= 7.0'
+  gem 'phlex', '>= 1.0' # For testing Phlex component compatibility
 end

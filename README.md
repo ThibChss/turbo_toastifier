@@ -99,6 +99,16 @@ def create
 end
 ```
 
+**Note:** `toastified_render` is compatible with Phlex components. You can pass Phlex components directly:
+
+```ruby
+def show
+  toastified_render(Posts::ShowComponent.new(@post), notice: 'Post loaded!')
+end
+```
+
+When `component` is `nil`, only the Turbo Stream format is rendered (useful for Turbo-only responses).
+
 #### Using toastified_redirect
 
 ```ruby
@@ -186,42 +196,48 @@ toast(:notice, 'This appears later', schedule: :later)
 
 ### Styling
 
-You can override the default styles by importing the SCSS file and customizing variables:
+You can override the default styles by importing the gem's styles first, then adding your customizations:
 
 ```scss
-@import 'turbo_toastifier/flash';
+// Import the gem's styles first
+@import 'turbo_toastifier';
 
-// Override default colors
+// Then override with your custom styles (these will take precedence)
 .flash {
+  &__message {
+    // Override any default message styles
+    background: #your-color;
+    color: #your-text-color;
+  }
+
   &__message.--notice {
-    border-left-color: #your-color;
+    border-left-color: #your-notice-color;
   }
 
   &__message.--alert {
-    border-left-color: #your-color;
+    border-left-color: #your-alert-color;
   }
 
   &__message.--warning {
-    border-left-color: #your-color;
+    border-left-color: #your-warning-color;
   }
 }
-```
 
-Then add corresponding styles for your custom types:
-
-```scss
+// Add styles for custom flash types
 .flash__message.--success {
-  border-left: 4px solid #your-color;
+  border-left: 4px solid #your-success-color;
 }
 
 .flash__message.--error {
-  border-left: 4px solid #your-color;
+  border-left: 4px solid #your-error-color;
 }
 
 .flash__message.--info {
-  border-left: 4px solid #your-color;
+  border-left: 4px solid #your-info-color;
 }
 ```
+
+**Important:** Make sure your custom styles are imported **after** `@import 'turbo_toastifier';` so they can override the default styles. If your styles still don't apply, you may need to increase specificity or use `!important` for specific properties.
 
 ## Development
 

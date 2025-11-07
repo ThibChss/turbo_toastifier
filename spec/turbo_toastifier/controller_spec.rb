@@ -2,6 +2,12 @@
 
 require 'spec_helper'
 
+begin
+  require 'phlex'
+rescue LoadError
+  # Phlex not available, tests will be skipped
+end
+
 # Test controller class
 class TestController < ActionController::Base
   include TurboToastifier::Controller
@@ -160,6 +166,52 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
       allow(controller).to receive(:render).and_return('')
       get :create, format: :turbo_stream
       expect(response).to have_http_status(:success)
+    end
+
+    it 'works with Phlex components when component is provided' do
+      skip 'Phlex not available' unless defined?(Phlex)
+
+      phlex_component = Class.new(Phlex::HTML) do
+        def call
+          div { 'Phlex content' }
+        end
+      end.new
+
+      allow(controller).to receive(:render).and_return('')
+      controller.instance_eval do
+        toastified_render(phlex_component, notice: 'Success!')
+      end
+
+      expect(controller).to have_received(:render).with(phlex_component, hash_including(notice: 'Success!'))
+      expect(flash.now[:notice]).to eq(['Success!'])
+    end
+
+    it 'only renders turbo_stream format when component is nil (Phlex-compatible behavior)' do
+      allow(controller).to receive(:render).and_return('')
+      format_double = double('Format')
+      turbo_stream_called = false
+
+      # When component is nil, format.html block is not executed (due to `if component.present?`)
+      # So we only expect turbo_stream to be called
+      allow(format_double).to receive(:html) do |&block|
+        # Block is provided but not executed when component is nil
+        block&.call
+      end
+      allow(format_double).to receive(:turbo_stream) do |&block|
+        turbo_stream_called = true
+        block&.call
+      end
+      allow(controller).to receive(:respond_to).and_yield(format_double)
+
+      controller.instance_eval do
+        toastified_render(notice: 'Success!')
+      end
+
+      # Only turbo_stream format is executed when component is nil
+      expect(turbo_stream_called).to be true
+      # render should only be called for turbo_stream, not for HTML (since component is nil)
+      expect(controller).to have_received(:render).once # Only for turbo_stream
+      expect(flash.now[:notice]).to eq(['Success!'])
     end
 
     it 'handles multiple toast types' do
