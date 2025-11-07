@@ -68,5 +68,34 @@ RSpec.describe TurboToastifier::ViewHelper, type: :helper do
         expect(result).to include('Message 2')
       end
     end
+
+    context 'when flash message contains HTML' do
+      before do
+        flash_messages[:notice] = 'Simple message'
+      end
+
+      it 'escapes HTML by default' do
+        result = @view_context.toastified_flash_tag
+
+        expect(result).to include('Simple message')
+        expect(result).not_to include('<script>')
+      end
+
+      it 'allows HTML when message is marked as html_safe' do
+        flash_messages[:notice] = '<strong>Bold text</strong>'.html_safe
+        result = @view_context.toastified_flash_tag
+
+        expect(result).to include('<strong>Bold text</strong>')
+        expect(result).not_to include('&lt;strong&gt;')
+      end
+
+      it 'allows links when marked as html_safe' do
+        flash_messages[:notice] = '<a href="/posts">View posts</a>'.html_safe
+        result = @view_context.toastified_flash_tag
+
+        expect(result).to include('<a href="/posts">View posts</a>')
+        expect(result).not_to include('&lt;a')
+      end
+    end
   end
 end

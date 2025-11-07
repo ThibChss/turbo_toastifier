@@ -85,6 +85,31 @@ class PostsController < ApplicationController
 end
 ```
 
+#### HTML content in toasts
+
+By default, all messages are HTML-escaped for security. To include HTML content (like links), mark the message as safe:
+
+```ruby
+def show
+  post_link = helpers.link_to('View post', @post)
+  toast(:notice, "Post updated! #{post_link}".html_safe)
+end
+
+# Or using content_tag
+def create
+  message = content_tag(:strong, 'Success!') + ' Post created.'
+  toast(:notice, message.html_safe)
+end
+
+# Or with toastified_render/redirect
+def update
+  link = helpers.link_to('View', post_path(@post))
+  toastified_redirect(posts_path, notice: "Updated! #{link}".html_safe)
+end
+```
+
+**Security Note:** Only use `.html_safe` with content you trust. Never use it with user-generated content without proper sanitization.
+
 #### Using toastified_render
 
 ```ruby
