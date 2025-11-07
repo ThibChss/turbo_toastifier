@@ -1,0 +1,13 @@
+<% flash.each do |flash_type, messages| %>
+  <% Array.wrap(messages).each do |message| %>
+    <% next if message.blank? %>
+
+    <div
+      class="flash__message --<%= flash_type %>"
+      data-controller="turbo-toastifier-flash-removal"
+      data-action="animationend->turbo-toastifier-flash-removal#remove"
+    >
+      <%= h(message) %>
+    </div>
+  <% end %>
+<% end %>

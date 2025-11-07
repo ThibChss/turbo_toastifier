@@ -1,0 +1,8 @@
+<%= turbo_frame_tag :flash,
+    class: "flash",
+    refresh: :morph,
+    data: {
+      controller: "turbo-toastifier-flash-scroll"
+    } do %>
+  <%= render partial: "flash_message", locals: { flash: flash } %>
+<% end %>
