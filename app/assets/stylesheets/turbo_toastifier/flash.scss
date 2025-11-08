@@ -32,21 +32,14 @@
     letter-spacing: 0.2px;
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.06);
     cursor: default;
-    // Messages start hidden and off-screen
-    // They'll animate in when added
     opacity: 0;
     transform: translateX(100%);
-    // Animation is started by JavaScript when message is added
-    // Only apply animation when .animating class is present
     animation: none;
 
-    // When animating, the message slides in from the right
-    // After animation, it stays visible (animation ends at visible state)
     &.animating {
       animation: slide-in 0.4s ease-out both;
     }
 
-    // When removing, the message fades out and slides out
     &.removing {
       animation: fade-out-slide 0.3s ease-in forwards;
     }
@@ -54,6 +47,12 @@
     &.paused,
     &.animating.paused {
       animation-play-state: paused;
+    }
+
+    &.hidden {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
     }
   }
 

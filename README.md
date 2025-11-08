@@ -12,6 +12,7 @@ A Rails gem for beautiful toast notifications using Turbo Streams and Stimulus c
 - 🔧 Easy to customize styles
 - ⏸️ Pause on hover - messages pause their animation when hovered
 - 📋 Queue system - messages only start disappearing after the first one is removed
+- 🔢 Configurable message limit - limit how many messages are visible at once
 
 ## Installation
 
@@ -36,6 +37,22 @@ In your main layout file (usually `app/views/layouts/application.html.erb`), add
 ```erb
 <%= toastified_flash_tag %>
 ```
+
+#### Limiting the number of visible messages
+
+You can limit how many messages are displayed at the same time by passing the `max_messages` option:
+
+```erb
+<%= toastified_flash_tag(max_messages: 5) %>
+```
+
+When a limit is set:
+- Only the specified number of messages will be visible at once
+- Additional messages will be queued and hidden
+- When a visible message disappears, the next queued message will automatically appear
+- This is useful for preventing screen clutter when many notifications are triggered
+
+If `max_messages` is not specified, all messages will be visible (default behavior).
 
 ### 2. Import the stylesheet
 

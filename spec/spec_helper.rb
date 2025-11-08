@@ -91,7 +91,10 @@ RSpec.configure do |config|
         flash = locals_hash[:flash] || @flash || {}
 
         if partial_name == 'turbo_toastifier/flash_container'
-          turbo_frame_tag(:flash, class: 'flash', refresh: :morph, data: { controller: 'turbo-toastifier-flash-scroll' }) do
+          max_messages = locals_hash[:max_messages]
+          data_attrs = { controller: 'turbo-toastifier-flash-scroll' }
+          data_attrs[:'turbo-toastifier-flash-scroll-max-messages-value'] = max_messages unless max_messages.nil?
+          turbo_frame_tag(:flash, class: 'flash', refresh: :morph, data: data_attrs) do
             render(partial: 'flash_message', locals: { flash: flash })
           end
         elsif partial_name == 'flash_message'

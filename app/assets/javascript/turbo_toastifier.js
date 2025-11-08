@@ -3,17 +3,84 @@ import { Controller as BaseController } from '@hotwired/stimulus'
 
 class FlashRemovalController extends BaseController {
   static values = {
-    index: Number
+    displayTime: { type: Number, default: 4 }
   }
 
+  slideInDuration = 400
+
   connect() {
-    // All messages should animate in immediately when added
-    // No queue for appearing - they all appear and stack
+    // Immediately check and hide if needed, before any animation starts
+    const container = this.getContainer()
+    if (container) {
+      // Check data attribute directly first (most reliable)
+      const maxMessagesAttr = container.getAttribute('data-turbo-toastifier-flash-scroll-max-messages-value')
+      if (maxMessagesAttr) {
+        const maxMessages = parseInt(maxMessagesAttr, 10)
+        if (!isNaN(maxMessages) && maxMessages > 0) {
+          // Get all messages in DOM order
+          const allMessages = Array.from(container.querySelectorAll('.flash__message:not(.removing)'))
+          const currentIndex = allMessages.indexOf(this.element)
+          if (currentIndex >= maxMessages) {
+            // This message exceeds the limit, hide it immediately
+            this.element.classList.add('hidden')
+            return // Don't start animation
+          }
+        }
+      }
+    }
+
+    // If we get here, either no limit or within limit - proceed with normal flow
     requestAnimationFrame(() => {
       setTimeout(() => {
-        this.startAnimation()
+        const container = this.getContainer()
+        if (container) {
+          const scrollController = this.application?.getControllerForElementAndIdentifier(
+            container,
+            'turbo-toastifier-flash-scroll'
+          )
+          if (scrollController) {
+            // Enforce the limit again (in case scroll controller has better value)
+            scrollController.enforceMaxMessages()
+          }
+          // Only start animation if message is visible (not hidden)
+          if (!this.element.classList.contains('hidden')) {
+            this.startAnimation()
+          }
+        } else {
+          // No container, show immediately
+          if (!this.element.classList.contains('hidden')) {
+            this.startAnimation()
+          }
+        }
       }, 100)
     })
+  }
+
+  shouldBeHidden(scrollController) {
+    // Check if this message should be hidden based on max messages limit
+    if (!scrollController.hasMaxMessagesValue || !scrollController.maxMessagesValue) {
+      return false // No limit, don't hide
+    }
+
+    // Get all messages in the container (including this one)
+    const allMessages = Array.from(scrollController.element.querySelectorAll('.flash__message:not(.removing)'))
+    const currentIndex = allMessages.indexOf(this.element)
+
+    // If this message's index is >= maxMessagesValue, it should be hidden
+    // (indices are 0-based, so if maxMessagesValue is 3, indices 0, 1, 2 are visible, 3+ are hidden)
+    return currentIndex >= scrollController.maxMessagesValue
+  }
+
+  getContainer() {
+    let container = this.element.closest('.flash')
+    if (!container) {
+      container = this.element.parentElement
+      while (container && !container.classList.contains('flash')) {
+        container = container.parentElement
+        if (!container || container === document.body) break
+      }
+    }
+    return container
   }
 
   disconnect() {
@@ -93,15 +160,13 @@ class FlashRemovalController extends BaseController {
     this.element.classList.add('animating')
     // Force a reflow to ensure animation starts immediately
     void this.element.offsetHeight
-    // Message stays visible for 4 seconds AFTER the slide-in animation completes
-    // Slide-in animation is 400ms, so total timeout = 400ms (animation) + 4000ms (visible time)
-    this.remainingTime = 4400
+
     // Start the removal timeout - message will start removing 4 seconds after animation completes
     this.removalTimeout = setTimeout(() => {
       if (this.element && !this.element.classList.contains('removing') && !this.element.classList.contains('paused')) {
         this.startRemoval()
       }
-    }, this.remainingTime)
+    }, this.slideInDuration + (this.displayTimeValue * 1000))
   }
 
   startRemoval() {
@@ -121,15 +186,27 @@ class FlashRemovalController extends BaseController {
 
   triggerNextRemoval() {
     // When this message finishes removing, trigger the next one to start removing
-    const container = this.element.closest('.flash') || this.element.parentElement
+    const container = this.getContainer()
     if (!container) return
+
+    // Notify scroll controller to show next message if limit is enforced
+    const scrollController = this.application?.getControllerForElementAndIdentifier(
+      container,
+      'turbo-toastifier-flash-scroll'
+    )
+    if (scrollController) {
+      scrollController.showNextMessage()
+    }
+
     // Get all messages (including the one being removed, to find position)
     const allMessages = Array.from(container.querySelectorAll('.flash__message'))
     const currentIndex = allMessages.indexOf(this.element)
 
-    // Find the next message in the queue (that's not being removed)
+    // Find the next message in the queue (that's not being removed and not hidden)
     const nextMessage = allMessages[currentIndex + 1]
-    if (nextMessage && !nextMessage.classList.contains('removing')) {
+    if (nextMessage &&
+        !nextMessage.classList.contains('removing') &&
+        !nextMessage.classList.contains('hidden')) {
       try {
         const controller = this.application.getControllerForElementAndIdentifier(
           nextMessage,
@@ -253,9 +330,23 @@ class FlashRemovalController extends BaseController {
 
 // Flash Scroll Controller (bundled inline for importmap compatibility)
 class FlashScrollController extends BaseController {
+  static values = {
+    maxMessages: { type: Number, default: 0 }
+  }
+
   connect() {
     this.handleScroll()
     window.addEventListener('scroll', this.handleScroll.bind(this))
+    // Enforce max messages limit immediately (synchronously)
+    // This must happen before any messages can render
+    this.enforceMaxMessages()
+    // Also enforce after a short delay to catch any messages that connect later
+    requestAnimationFrame(() => {
+      this.enforceMaxMessages()
+      setTimeout(() => {
+        this.enforceMaxMessages()
+      }, 200)
+    })
   }
 
   disconnect() {
@@ -269,49 +360,88 @@ class FlashScrollController extends BaseController {
       this.element.classList.remove('scrolled')
     }
   }
-}
 
-// Register controllers with Stimulus application
-// With importmap, the Stimulus application is typically available as window.application
-function registerControllers() {
-  let application = null
-
-  if (typeof window !== 'undefined' && window.application) {
-    application = window.application
+  getVisibleMessages() {
+    // Get all messages that are visible (not removing, not hidden)
+    return Array.from(this.element.querySelectorAll('.flash__message:not(.removing):not(.hidden)'))
   }
 
-  if (!application && typeof window !== 'undefined' && window.Stimulus) {
-    application = window.Stimulus
+  getHiddenMessages() {
+    // Get all messages that are hidden (waiting in queue)
+    return Array.from(this.element.querySelectorAll('.flash__message.hidden'))
   }
 
-  if (application && typeof application.register === 'function') {
-    application.register('turbo-toastifier-flash-removal', FlashRemovalController)
-    application.register('turbo-toastifier-flash-scroll', FlashScrollController)
-    return true
-  }
+  enforceMaxMessages() {
+    if (this.hasMaxMessagesValue) {
+      this.maxMessagesValue = parseInt(this.maxMessagesValue, 10)
+    }
 
-  return false
-}
+    const limit = this.maxMessagesValue > 0
 
-// Try to register immediately
-let registered = registerControllers()
+    if (!limit) {
+      this.getHiddenMessages().forEach(message => {
+        message.classList.remove('hidden')
 
-// If not registered, try again after Stimulus loads
-if (!registered && typeof window !== 'undefined') {
-  const attempts = [100, 300, 500, 1000, 2000]
-  attempts.forEach(delay => {
-    setTimeout(() => {
-      if (!registered) {
-        registered = registerControllers()
-      }
-    }, delay)
-  })
+        this.removalController = this.application?.getControllerForElementAndIdentifier(
+          message,
+          'turbo-toastifier-flash-removal'
+        )
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      if (!registered) {
-        registered = registerControllers()
+        if (this.removalController && !this.removalController.element.classList.contains('animating')) {
+          this.removalController.startAnimation()
+        }
+      })
+
+      return
+    }
+
+    // Get all messages in DOM order (not removing)
+    const allMessages = Array.from(this.element.querySelectorAll('.flash__message:not(.removing)'))
+
+    console.log('[TurboToastifier] Total messages:', allMessages.length, 'Max allowed:', maxMessages)
+
+    // Hide/show messages based on their DOM position
+    allMessages.forEach((msg, index) => {
+      if (index >= maxMessages) {
+        // This message should be hidden (index >= maxMessages)
+        if (!msg.classList.contains('hidden')) {
+          console.log('[TurboToastifier] Hiding message at index', index)
+          msg.classList.add('hidden')
+          // Stop any ongoing animations and timeouts
+          const controller = this.application?.getControllerForElementAndIdentifier(
+            msg,
+            'turbo-toastifier-flash-removal'
+          )
+          if (controller) {
+            if (controller.removalTimeout) {
+              clearTimeout(controller.removalTimeout)
+              controller.removalTimeout = null
+            }
+            // Remove animating class if it was animating
+            if (controller.element.classList.contains('animating')) {
+              controller.element.classList.remove('animating')
+            }
+          }
+        }
+      } else {
+        // This message should be visible (index < maxMessages)
+        if (msg.classList.contains('hidden')) {
+          msg.classList.remove('hidden')
+          // Start animation for newly shown message
+          const controller = this.application?.getControllerForElementAndIdentifier(
+            msg,
+            'turbo-toastifier-flash-removal'
+          )
+          if (controller && !controller.element.classList.contains('animating')) {
+            controller.startAnimation()
+          }
+        }
       }
     })
+  }
+
+  showNextMessage() {
+    // Called when a message is removed, show the next one if under limit
+    this.enforceMaxMessages()
   }
 }

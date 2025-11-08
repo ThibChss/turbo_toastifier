@@ -1,8 +1,14 @@
 <%= turbo_frame_tag :flash,
     class: "flash",
     refresh: :morph,
-    data: {
-      controller: "turbo-toastifier-flash-scroll"
+    data:
+    {
+      controller: "turbo-toastifier-flash-scroll",
+      turbo_toastifier_flash_scroll_max_messages_value: local_assigns.fetch(:max_messages, 0)
     } do %>
-  <%= render partial: "turbo_toastifier/flash_message", locals: { flash: flash } %>
+  <%= render partial: "turbo_toastifier/flash_message",
+             locals: {
+               flash:,
+               display_time: local_assigns.fetch(:display_time, 4)
+             } %>
 <% end %>

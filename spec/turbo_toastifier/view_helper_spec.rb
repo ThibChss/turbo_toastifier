@@ -97,5 +97,42 @@ RSpec.describe TurboToastifier::ViewHelper, type: :helper do
         expect(result).not_to include('&lt;a')
       end
     end
+
+    context 'with max_messages option' do
+      before do
+        flash_messages[:notice] = ['Message 1', 'Message 2', 'Message 3', 'Message 4', 'Message 5']
+      end
+
+      it 'accepts max_messages parameter' do
+        # Test that the method accepts the parameter without error
+        expect { @view_context.toastified_flash_tag(max_messages: 3) }.not_to raise_error
+        result = @view_context.toastified_flash_tag(max_messages: 3)
+        expect(result).to be_a(String)
+        expect(result).to include('flash')
+      end
+
+      it 'works without max_messages parameter' do
+        result = @view_context.toastified_flash_tag
+        expect(result).to be_a(String)
+        expect(result).to include('flash')
+      end
+
+      it 'renders all messages regardless of max_messages limit' do
+        result = @view_context.toastified_flash_tag(max_messages: 2)
+
+        # All messages should be in the DOM, but only 2 will be visible
+        expect(result).to include('Message 1')
+        expect(result).to include('Message 2')
+        expect(result).to include('Message 3')
+        expect(result).to include('Message 4')
+        expect(result).to include('Message 5')
+      end
+
+      it 'accepts nil for max_messages' do
+        result = @view_context.toastified_flash_tag(max_messages: nil)
+
+        expect(result).not_to include('turbo-toastifier-flash-scroll-max-messages-value')
+      end
+    end
   end
 end
