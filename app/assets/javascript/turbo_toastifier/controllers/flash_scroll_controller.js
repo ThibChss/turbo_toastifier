@@ -8,6 +8,7 @@ export default class FlashScrollController extends BaseController {
   connect() {
     this.#handleScroll()
     this.#setEventListeners('add')
+    this.enforceMaxMessages()
     this.#enforceAfterDelay()
   }
 
@@ -18,9 +19,6 @@ export default class FlashScrollController extends BaseController {
   // ===== Public methods =====
 
   enforceMaxMessages() {
-    this.#setRemovalController()
-    if (!this.removalController) { return }
-
     this.maxMessagesValue = parseInt(this.maxMessagesValue, 10)
 
     if (!this.#hasLimit()) {
@@ -28,8 +26,9 @@ export default class FlashScrollController extends BaseController {
 
       this.hiddenMessages.forEach(message => {
         message.classList.remove('hidden')
+        this.#setRemovalController(message)
 
-        if (!this.removalController.element.classList.contains('animating')) {
+        if (this.removalController && !this.#isAnimating()) {
           this.removalController.startAnimation()
         }
       })
@@ -40,26 +39,53 @@ export default class FlashScrollController extends BaseController {
     this.#setAllMessages()
 
     this.allMessages.forEach((message, index) => {
+      this.#setRemovalController(message)
+
       if (index >= this.maxMessagesValue) {
         if (!this.#isHidden(message)) {
           message.classList.add('hidden')
 
-          if (this.removalController.removalTimeout) {
-            clearTimeout(this.removalController.removalTimeout)
-            this.removalController.removalTimeout = null
-          }
+          if (this.removalController) {
+            if (this.removalController.removalTimeout) {
+              clearTimeout(this.removalController.removalTimeout)
+              this.removalController.removalTimeout = null
+            }
 
-          if (this.#isAnimating()) {
-            this.removalController.element.classList.remove('animating')
+            if (this.#isAnimating()) {
+              this.removalController.element.classList.remove('animating')
+            }
           }
         }
       } else {
         if (this.#isHidden(message)) {
           message.classList.remove('hidden')
 
-          if (!this.#isAnimating()) {
-            this.removalController.startAnimation()
-          }
+          setTimeout(() => {
+            this.#setRemovalController(message)
+
+            if (this.removalController) {
+              if (this.removalController.removalTimeout) {
+                clearTimeout(this.removalController.removalTimeout)
+                this.removalController.removalTimeout = null
+              }
+
+              if (this.removalController.checkInterval) {
+                clearInterval(this.removalController.checkInterval)
+                this.removalController.checkInterval = null
+              }
+
+              this.removalController.remainingTime = this.removalController.displayTime
+              this.removalController.animationStartTime = null
+
+              if (this.removalController.isAnimating()) {
+                this.removalController.element.classList.remove('animating')
+              }
+
+              void this.removalController.element.offsetHeight
+
+              this.removalController.startAnimation()
+            }
+          }, 10)
         }
       }
     })
@@ -96,15 +122,15 @@ export default class FlashScrollController extends BaseController {
     return this.maxMessagesValue > 0
   }
 
-  #setRemovalController() {
-    this.removalController = this.application?.getControllerForElementAndIdentifier(
-      this.element,
+  #setRemovalController(element = this.element) {
+    this.removalController =  this.application?.getControllerForElementAndIdentifier(
+      element,
       'turbo-toastifier-flash-removal'
     )
   }
 
   #isAnimating() {
-    return this.removalController.isAnimating()
+    return this.removalController?.isAnimating() || false
   }
 
   #isHidden(element = this.element) {
@@ -118,6 +144,10 @@ export default class FlashScrollController extends BaseController {
       setTimeout(() => {
         this.enforceMaxMessages()
       }, 200)
+
+      setTimeout(() => {
+        this.enforceMaxMessages()
+      }, 500)
     })
   }
 }

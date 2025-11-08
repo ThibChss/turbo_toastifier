@@ -118,22 +118,58 @@ export default class FlashRemovalController extends BaseController {
     this.#startRemoval()
   }
 
+  startAnimation() {
+    this.#startAnimation()
+  }
+
+  setRemovalTimeout(duration = this.remainingTime) {
+    this.#setRemovalTimeout(duration)
+  }
+
+  waitForRemovalQueue() {
+    this.#waitForRemovalQueue()
+  }
+
+  setRequiredValues() {
+    this.#setRequiredValues()
+  }
+
   // ===== Private methods =====
 
   #hideOrShow() {
+    if (this.scrollController) {
+      this.scrollController.enforceMaxMessages()
+    }
+
     requestAnimationFrame(() => {
-      setTimeout(() => {
+      if (this.scrollController) {
         this.scrollController.enforceMaxMessages()
+      }
+
+      setTimeout(() => {
+        if (this.scrollController) {
+          this.scrollController.enforceMaxMessages()
+        }
 
         if (this.#isVisible()) {
           this.#startAnimation()
         }
       }, 100)
+
+      setTimeout(() => {
+        if (this.scrollController) {
+          this.scrollController.enforceMaxMessages()
+        }
+      }, 300)
     })
   }
 
   #setContainer() {
-    this.container = this.element.closest('#flash')
+    this.container = this.element.closest('.flash')
+
+    if (!this.container) {
+      this.container = this.element.closest('#flash')
+    }
   }
 
   #setMaxMessagesValue() {
@@ -155,11 +191,17 @@ export default class FlashRemovalController extends BaseController {
     )
   }
 
-  #setRemovalController(element) {
-    this.removalController = this.application?.getControllerForElementAndIdentifier(
+  #setRemovalController(element, variable = false) {
+    const controller = this.application?.getControllerForElementAndIdentifier(
       element,
       'turbo-toastifier-flash-removal'
     )
+
+    if (variable) {
+      return controller
+    }
+
+    this.removalController = controller
   }
 
   #setCurrentIndex() {
@@ -171,9 +213,18 @@ export default class FlashRemovalController extends BaseController {
   }
 
   #setRemovalTimeout(duration = this.remainingTime) {
-    const validDuration = (this.#isValidDuration(duration) && duration > 0)
-      ? duration
-      : Math.max(100, this.displayTime * 0.1)
+    let validDuration = duration
+
+    if (!this.#isValidDuration(duration) || duration <= 0) {
+      validDuration = this.displayTime
+    }
+
+    validDuration = Math.max(100, validDuration)
+
+    if (this.removalTimeout) {
+      clearTimeout(this.removalTimeout)
+      this.removalTimeout = null
+    }
 
     this.removalTimeout = setTimeout(() => {
       if (!this.#isRemoving() && !this.#isPaused()) {
@@ -251,8 +302,17 @@ export default class FlashRemovalController extends BaseController {
   #startAnimation() {
     if (this.isAnimating()) { return }
 
-    this.#setAnimationStartTime()
+    if (this.removalTimeout) {
+      clearTimeout(this.removalTimeout)
+      this.removalTimeout = null
+    }
 
+    if (this.checkInterval) {
+      clearInterval(this.checkInterval)
+      this.checkInterval = null
+    }
+
+    this.#setAnimationStartTime()
     this.remainingTime = this.displayTime
     this.element.classList.add('animating')
 
@@ -276,21 +336,98 @@ export default class FlashRemovalController extends BaseController {
   #triggerNextRemoval() {
     if (!this.container) { return }
 
-    this.#setRequiredValues()
-    this.#setAllMessages('')
-    this.scrollController.showNextMessage()
-
-    const nextMessage = this.allMessages[this.currentIndex + 1]
-    if (nextMessage && this.#isVisible(nextMessage) && !this.#isRemoving(nextMessage)) {
-      this.#setRemovalController(nextMessage)
-
-      if (this.removalController.checkInterval) {
-        clearInterval(this.removalController.checkInterval)
-        this.removalController.checkInterval = null
+    requestAnimationFrame(() => {
+      if (this.scrollController) {
+        this.scrollController.showNextMessage()
       }
 
-      this.removalController.startRemoval()
-    }
+      setTimeout(() => {
+        this.#setAllMessages()
+
+        const visibleMessages = this.allMessages.filter(message => {
+          return this.#isVisible(message) && !this.#isRemoving(message) && !this.#isPaused(message)
+        })
+
+        const firstVisibleMessage = visibleMessages[0]
+        if (firstVisibleMessage) {
+          const removalController = this.#setRemovalController(firstVisibleMessage, true)
+
+          if (removalController) {
+            const hadCheckInterval = !!removalController.checkInterval
+            const isAnimating = removalController.isAnimating()
+            const hasTimeout = !!removalController.removalTimeout
+
+            if (removalController.checkInterval) {
+              clearInterval(removalController.checkInterval)
+
+              removalController.checkInterval = null
+            }
+
+            this.#ensureRequiredValues(removalController)
+
+            const shouldStart = removalController.shouldStartRemoval()
+
+            if (hadCheckInterval && shouldStart) {
+              removalController.startRemoval()
+
+              return
+            }
+
+            if (isAnimating && !hasTimeout && shouldStart) {
+              removalController.startRemoval()
+
+              return
+            }
+
+            if (hadCheckInterval && !shouldStart) {
+              setTimeout(() => {
+                this.#ensureRequiredValues(removalController)
+
+                if (removalController.shouldStartRemoval()) {
+                  removalController.startRemoval()
+                } else {
+                  setTimeout(() => {
+                    removalController.setRequiredValues()
+
+                    if (removalController.shouldStartRemoval()) {
+                      removalController.startRemoval()
+                    } else {
+                      removalController.waitForRemovalQueue()
+                    }
+                  }, 50)
+                }
+              }, 10)
+
+              return
+            }
+
+            if (isAnimating && !hasTimeout && !shouldStart) {
+              setTimeout(() => {
+                removalController.setRequiredValues()
+
+                if (removalController.shouldStartRemoval()) {
+                  removalController.startRemoval()
+                } else {
+                  removalController.waitForRemovalQueue()
+                }
+              }, 10)
+
+              return
+            }
+
+            if (!hasTimeout) {
+              if (isAnimating) {
+                removalController.remainingTime = removalController.displayTime
+                removalController.setRemovalTimeout(removalController.displayTime)
+              } else {
+                removalController.remainingTime = removalController.displayTime
+                removalController.startAnimation()
+              }
+            }
+          }
+        }
+      }, 50)
+    })
   }
 
   #triggerWaitingMessages() {
@@ -321,5 +458,10 @@ export default class FlashRemovalController extends BaseController {
 
   #minimumDuration() {
     return Math.max(100, this.displayTime * 0.1)
+  }
+
+  #ensureRequiredValues(controller = this.removalController) {
+    controller.setRequiredValues()
+    controller.setRequiredValues()
   }
 }
