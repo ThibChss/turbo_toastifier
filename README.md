@@ -74,7 +74,9 @@ Or if using a CSS manifest:
 
 #### If using importmap
 
-The gem bundles all controllers into a single file to avoid import path issues. Simply add to your `config/importmap.rb`:
+**Option 1: Single bundled file (recommended)**
+
+The gem provides a bundled version that works out of the box. Simply add to your `config/importmap.rb`:
 
 ```ruby
 pin 'turbo_toastifier', to: 'turbo_toastifier.js'
@@ -86,16 +88,33 @@ Then in your main JavaScript file (e.g., `app/javascript/application.js`):
 import 'turbo_toastifier'
 ```
 
+**Option 2: Separate controller files**
+
+If you prefer to use the separate controller files, you'll need to pin each file in your `config/importmap.rb`:
+
+```ruby
+pin 'turbo_toastifier', to: 'turbo_toastifier.js'
+pin 'turbo_toastifier/controllers/flash_removal_controller', to: 'turbo_toastifier/controllers/flash_removal_controller.js'
+pin 'turbo_toastifier/controllers/flash_scroll_controller', to: 'turbo_toastifier/controllers/flash_scroll_controller.js'
+```
+
 The controllers will be automatically registered with Stimulus. The gem will try to find the Stimulus application via `window.application` or `window.Stimulus`.
 
 **Note:** Make sure `@hotwired/stimulus` is already pinned in your importmap (it should be by default in Rails 7+).
 
 #### If using a bundler (esbuild, webpack, etc.)
 
-Import the JavaScript file directly:
+Import the JavaScript file directly. The bundler will automatically resolve the relative imports:
 
 ```javascript
 import 'turbo_toastifier'
+```
+
+Or import the controllers directly if needed:
+
+```javascript
+import FlashRemovalController from 'turbo_toastifier/controllers/flash_removal_controller.js'
+import FlashScrollController from 'turbo_toastifier/controllers/flash_scroll_controller.js'
 ```
 
 ## Usage

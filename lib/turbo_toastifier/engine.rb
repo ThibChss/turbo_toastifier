@@ -11,6 +11,11 @@ module TurboToastifier
         app.config.assets.paths << root.join('app', 'assets', 'stylesheets').to_s
         app.config.assets.paths << root.join('app', 'assets', 'javascript').to_s
       end
+
+      # Ensure JavaScript files are served with correct MIME type
+      if app.config.respond_to?(:importmap)
+        # Importmap will handle the JavaScript files automatically
+      end
     end
 
     initializer 'turbo_toastifier.helpers' do

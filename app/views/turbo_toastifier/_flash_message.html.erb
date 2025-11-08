@@ -5,7 +5,7 @@
     <div
       class="flash__message --<%= flash_type %>"
       data-controller="turbo-toastifier-flash-removal"
-      data-turbo-toastifier-flash-removal-display-time-value="<%= display_time %>"
+      data-turbo-toastifier-flash-removal-display-time-value="<%= local_assigns.fetch(:display_time, 4) %>"
       data-action="animationend->turbo-toastifier-flash-removal#remove mouseenter->turbo-toastifier-flash-removal#pause mouseleave->turbo-toastifier-flash-removal#resume"
     >
       <%= h(message) %>
