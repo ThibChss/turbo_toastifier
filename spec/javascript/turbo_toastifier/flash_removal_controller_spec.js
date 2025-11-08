@@ -57,10 +57,15 @@ describe('FlashRemovalController', () => {
       expect(element.classList.contains('paused')).toBe(true)
     })
 
-    it('does not pause if element is removing', () => {
+    it('pauses even if element is removing and stops removal animation', () => {
       element.classList.add('removing')
+      controller.remainingTime = 1000 // Set some remaining time
       controller.pause()
-      expect(element.classList.contains('paused')).toBe(false)
+      // Should pause and remove the removing class
+      expect(element.classList.contains('paused')).toBe(true)
+      expect(element.classList.contains('removing')).toBe(false)
+      // Should reset remaining time to minimum
+      expect(controller.remainingTime).toBeGreaterThanOrEqual(100)
     })
 
     it('calculates remaining time when animationStartTime is set', () => {
@@ -103,10 +108,14 @@ describe('FlashRemovalController', () => {
       expect(controller.animationStartTime).toBeUndefined()
     })
 
-    it('does not resume if element is removing', () => {
+    it('removes removing class and resumes if element is removing', () => {
+      element.classList.add('paused')
       element.classList.add('removing')
       controller.resume()
-      expect(element.classList.contains('paused')).toBe(true)
+      // Should remove both removing and paused classes, and resume
+      expect(element.classList.contains('removing')).toBe(false)
+      expect(element.classList.contains('paused')).toBe(false)
+      expect(controller.animationStartTime).toBeDefined()
     })
 
     it('sets animationStartTime when resuming', () => {

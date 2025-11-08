@@ -45,7 +45,8 @@
     }
 
     &.paused,
-    &.animating.paused {
+    &.animating.paused,
+    &.removing.paused {
       animation-play-state: paused;
     }
 

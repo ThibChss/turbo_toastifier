@@ -31,14 +31,25 @@ export default class FlashRemovalController extends BaseController {
   // ===== Public methods =====
 
   pause() {
-    if (this.#isPaused() || this.#isRemoving()) return
+    if (this.#isPaused()) return
 
-    if (this.animationStartTime) {
-      const elapsed = Date.now() - this.animationStartTime
+    const wasRemoving = this.#isRemoving()
 
-      this.remainingTime = Math.max(0, this.remainingTime - elapsed)
+    if (wasRemoving) {
+      this.element.classList.remove('removing')
+    }
+
+    if (this.animationStartTime && this.#isValidDuration(this.remainingTime)) {
+      this.remainingTime = Math.max(
+        this.#minimumDuration(),
+        this.remainingTime - (Date.now() - this.animationStartTime)
+      )
     } else {
-      this.remainingTime = this.displayTime
+      if (wasRemoving) {
+        this.remainingTime = this.#minimumDuration()
+      } else {
+        this.remainingTime = this.displayTime
+      }
     }
 
     if (this.removalTimeout) {
@@ -50,17 +61,28 @@ export default class FlashRemovalController extends BaseController {
   }
 
   resume() {
-    if (!this.#isPaused() || this.#isRemoving()) return
+    if (!this.#isPaused()) return
+
+    if (this.#isRemoving()) {
+      this.element.classList.remove('removing')
+    }
 
     this.element.classList.remove('paused')
 
-    if (this.remainingTime <= 0) {
-      this.remainingTime = Math.max(100, this.displayTime * 0.1)
+    if (!this.#isValidDuration(this.remainingTime) || this.remainingTime <= 0) {
+      this.remainingTime = this.#minimumDuration()
+    } else {
+      this.remainingTime = Math.max(this.#minimumDuration(), this.remainingTime)
     }
 
     this.#setAnimationStartTime()
-    this.#setRemovalTimeout(this.remainingTime)
 
+    if (this.removalTimeout) {
+      clearTimeout(this.removalTimeout)
+      this.removalTimeout = null
+    }
+
+    this.#setRemovalTimeout(this.remainingTime)
     this.#triggerWaitingMessages()
   }
 
@@ -149,11 +171,15 @@ export default class FlashRemovalController extends BaseController {
   }
 
   #setRemovalTimeout(duration = this.remainingTime) {
+    const validDuration = (this.#isValidDuration(duration) && duration > 0)
+      ? duration
+      : Math.max(100, this.displayTime * 0.1)
+
     this.removalTimeout = setTimeout(() => {
       if (!this.#isRemoving() && !this.#isPaused()) {
         this.#startRemoval()
       }
-    }, duration)
+    }, validDuration)
   }
 
   #setCheckInterval() {
@@ -287,5 +313,13 @@ export default class FlashRemovalController extends BaseController {
     this.#setAllMessages()
     this.#setRemovingMessages()
     this.#setCurrentIndex()
+  }
+
+  #isValidDuration(duration) {
+    return duration !== undefined && !isNaN(duration)
+  }
+
+  #minimumDuration() {
+    return Math.max(100, this.displayTime * 0.1)
   }
 }
