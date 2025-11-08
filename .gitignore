@@ -10,3 +10,6 @@
 
 # rspec failure tracking
 .rspec_status
+
+# Node.js dependencies
+/node_modules/

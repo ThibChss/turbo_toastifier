@@ -31,33 +31,37 @@ export default class FlashRemovalController extends BaseController {
   // ===== Public methods =====
 
   pause() {
-    if (!this.#isPaused() && !this.#isRemoving()) {
-      if (this.animationStartTime) {
-        const elapsed = Date.now() - this.animationStartTime
-        this.remainingTime = Math.max(0, this.remainingTime - elapsed)
-      }
+    if (this.#isPaused() || this.#isRemoving()) return
 
-      if (this.removalTimeout) {
-        clearTimeout(this.removalTimeout)
-        this.removalTimeout = null
-      }
+    if (this.animationStartTime) {
+      const elapsed = Date.now() - this.animationStartTime
 
-      this.element.classList.add('paused')
+      this.remainingTime = Math.max(0, this.remainingTime - elapsed)
+    } else {
+      this.remainingTime = this.displayTime
     }
+
+    if (this.removalTimeout) {
+      clearTimeout(this.removalTimeout)
+      this.removalTimeout = null
+    }
+
+    this.element.classList.add('paused')
   }
 
   resume() {
-    if (this.#isPaused() && !this.#isRemoving()) {
-      this.element.classList.remove('paused')
-      this.#triggerWaitingMessages()
+    if (!this.#isPaused() || this.#isRemoving()) return
 
-      if (this.remainingTime > 0) {
-        this.#setAnimationStartTime()
-        this.#setRemovalTimeout()
-      } else {
-        this.#startRemoval()
-      }
+    this.element.classList.remove('paused')
+
+    if (this.remainingTime <= 0) {
+      this.remainingTime = Math.max(100, this.displayTime * 0.1)
     }
+
+    this.#setAnimationStartTime()
+    this.#setRemovalTimeout(this.remainingTime)
+
+    this.#triggerWaitingMessages()
   }
 
   remove(event) {
@@ -82,6 +86,14 @@ export default class FlashRemovalController extends BaseController {
 
   isAnimating(element = this.element) {
     return element.classList.contains('animating')
+  }
+
+  shouldStartRemoval() {
+    return this.#shouldStartRemoval()
+  }
+
+  startRemoval() {
+    this.#startRemoval()
   }
 
   // ===== Private methods =====
@@ -214,6 +226,8 @@ export default class FlashRemovalController extends BaseController {
     if (this.isAnimating()) { return }
 
     this.#setAnimationStartTime()
+
+    this.remainingTime = this.displayTime
     this.element.classList.add('animating')
 
     void this.element.offsetHeight
@@ -249,7 +263,7 @@ export default class FlashRemovalController extends BaseController {
         this.removalController.checkInterval = null
       }
 
-      this.removalController.#startRemoval()
+      this.removalController.startRemoval()
     }
   }
 
@@ -260,11 +274,11 @@ export default class FlashRemovalController extends BaseController {
     nextMessages.forEach(message => {
       if (this.#isPaused(message)) { return }
       this.#setRemovalController(message)
-      if (this.removalController.checkInterval && this.removalController.#shouldStartRemoval()) {
+      if (this.removalController.checkInterval && this.removalController.shouldStartRemoval()) {
         clearInterval(this.removalController.checkInterval)
 
         this.removalController.checkInterval = null
-        this.removalController.#startRemoval()
+        this.removalController.startRemoval()
       }
     })
   }

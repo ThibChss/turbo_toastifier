@@ -329,7 +329,45 @@ The gem includes smart queue management and hover behavior:
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the Ruby tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+
+### Running Tests
+
+#### Ruby Tests (RSpec)
+
+Run the Ruby tests with:
+
+```bash
+bundle exec rspec
+```
+
+#### JavaScript Tests (Jest)
+
+The gem includes JavaScript tests using Jest (similar to RSpec for JavaScript). To run them:
+
+1. Install Node.js dependencies:
+```bash
+npm install
+```
+
+2. Run the JavaScript tests:
+```bash
+npm test
+```
+
+3. Run tests in watch mode:
+```bash
+npm run test:watch
+```
+
+4. Run tests with coverage:
+```bash
+npm run test:coverage
+```
+
+The JavaScript tests are located in `spec/javascript/` and test the Stimulus controllers:
+- `spec/javascript/turbo_toastifier/flash_removal_controller_spec.js` - Tests for pause, resume, and removal logic
+- `spec/javascript/turbo_toastifier/flash_scroll_controller_spec.js` - Tests for max messages enforcement and scroll handling
 
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
 
