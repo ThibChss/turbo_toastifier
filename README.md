@@ -40,10 +40,10 @@ In your main layout file (usually `app/views/layouts/application.html.erb`), add
 
 #### Limiting the number of visible messages
 
-You can limit how many messages are displayed at the same time by passing the `max_messages` option:
+You can limit how many messages are displayed at the same time by passing the `limit` option:
 
 ```erb
-<%= toastified_flash_tag(max_messages: 5) %>
+<%= toastified_flash_tag(limit: 5) %>
 ```
 
 When a limit is set:
@@ -52,7 +52,7 @@ When a limit is set:
 - When a visible message disappears, the next queued message will automatically appear
 - This is useful for preventing screen clutter when many notifications are triggered
 
-If `max_messages` is not specified, all messages will be visible (default behavior).
+If `limit` is not specified, all messages will be visible (default behavior).
 
 ### 2. Import the stylesheet
 
