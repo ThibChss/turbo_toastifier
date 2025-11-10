@@ -13,6 +13,8 @@ A Rails gem for beautiful toast notifications using Turbo Streams and Stimulus c
 - ⏸️ Pause on hover - messages pause their animation when hovered
 - 📋 Queue system - messages only start disappearing after the first one is removed
 - 🔢 Configurable message limit - limit how many messages are visible at once
+- ✕ Manual dismiss button - close button appears when auto-removal is disabled
+- 🎛️ Per-flash-type configuration - different durations for different flash types
 
 ## Installation
 
@@ -30,7 +32,65 @@ bundle install
 
 ## Setup
 
-### 1. Add the flash container to your layout
+### 1. Generate the initializer
+
+Run the generator to create the configuration file:
+
+```bash
+rails generate turbo_toastifier:install
+```
+
+This will create `config/initializers/turbo_toastifier.rb` with detailed comments explaining all configuration options.
+
+### 2. Configure defaults (optional)
+
+Edit `config/initializers/turbo_toastifier.rb` to customize the behavior:
+
+```ruby
+TurboToastifier.configure do |config|
+  # Maximum number of messages to display at once (0 = unlimited)
+  config.limit = 5
+
+  # Display duration in seconds, or a hash of flash_type => duration
+  # Examples:
+  #   config.duration = 4  # All messages disappear after 4 seconds
+  #   config.duration = { notice: 4, alert: 0 }  # Notice disappears after 4s, alert never disappears
+  #   config.duration = 0  # All messages never disappear (shows close button for all)
+  config.duration = 4
+end
+```
+
+**Configuration Options:**
+
+#### `limit` (Integer)
+- Maximum number of messages to display at once
+- Set to `0` for unlimited messages (default)
+- When set to a positive integer, only that many messages will be visible at once
+- Additional messages will be queued and automatically appear when visible messages are removed
+- Useful for preventing screen clutter when many notifications are triggered
+
+#### `duration` (Integer or Hash)
+- Display duration in seconds, or a hash of flash_type => duration
+- **Integer**: All messages will use the same duration
+  - Positive integer: Message will auto-remove after that many seconds
+  - `0`: Message will never auto-remove (shows close button for manual dismissal)
+- **Hash**: Each flash type can have its own duration
+  ```ruby
+  config.duration = {
+    notice: 4,   # Auto-remove after 4 seconds
+    alert: 0,    # Manual dismissal required
+    success: 5,  # Auto-remove after 5 seconds
+    error: 0     # Manual dismissal required
+  }
+  ```
+
+**Close Button:**
+- When `duration` is set to `0` for a message (either globally or per flash type), a close button (✕) appears in the top-right corner
+- Clicking the close button triggers an animated dismiss
+- Once manually dismissed, hover will not restart the animation
+- This is useful for important messages that users should explicitly acknowledge
+
+### 3. Add the flash container to your layout
 
 In your main layout file (usually `app/views/layouts/application.html.erb`), add the flash tag:
 
@@ -38,23 +98,9 @@ In your main layout file (usually `app/views/layouts/application.html.erb`), add
 <%= toastified_flash_tag %>
 ```
 
-#### Limiting the number of visible messages
+This will use the defaults configured in your initializer.
 
-You can limit how many messages are displayed at the same time by passing the `limit` option:
-
-```erb
-<%= toastified_flash_tag(limit: 5) %>
-```
-
-When a limit is set:
-- Only the specified number of messages will be visible at once
-- Additional messages will be queued and hidden
-- When a visible message disappears, the next queued message will automatically appear
-- This is useful for preventing screen clutter when many notifications are triggered
-
-If `limit` is not specified, all messages will be visible (default behavior).
-
-### 2. Import the stylesheet
+### 4. Import the stylesheet
 
 Add to your main stylesheet (e.g., `app/assets/stylesheets/application.scss`):
 
@@ -70,7 +116,7 @@ Or if using a CSS manifest:
  */
 ```
 
-### 3. Import the JavaScript
+### 5. Import the JavaScript
 
 #### If using importmap
 

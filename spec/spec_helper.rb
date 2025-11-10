@@ -91,21 +91,31 @@ RSpec.configure do |config|
         flash = locals_hash[:flash] || @flash || {}
 
         if partial_name == 'turbo_toastifier/flash_container'
-          limit = locals_hash[:limit]
+          config = TurboToastifier.configuration
           data_attrs = { controller: 'turbo-toastifier-flash-scroll' }
-          data_attrs[:'turbo-toastifier-flash-scroll-max-messages-value'] = limit unless limit.nil?
+          data_attrs[:'turbo-toastifier-flash-scroll-max-messages-value'] = config.limit
           turbo_frame_tag(:flash, class: 'flash', refresh: :morph, data: data_attrs) do
-            render(partial: 'flash_message', locals: { flash: flash })
+            render(partial: 'turbo_toastifier/flash_message', locals: { flash: flash })
           end
-        elsif partial_name == 'flash_message'
+        elsif partial_name == 'turbo_toastifier/flash_message'
           flash = locals_hash[:flash] || @flash || {}
+          config = TurboToastifier.configuration
           flash.map do |type, messages|
             Array.wrap(messages).map do |message|
               next if message.blank?
 
-              content_tag(:div, message, class: "flash__message --#{type}",
-                                         data: { controller: 'turbo-toastifier-flash-removal',
-                                                 action: 'animationend->turbo-toastifier-flash-removal#remove' })
+              duration = config.duration_for(type)
+              show_close = duration.zero?
+              data_attrs = {
+                controller: 'turbo-toastifier-flash-removal',
+                action: 'animationend->turbo-toastifier-flash-removal#remove',
+                'turbo-toastifier-flash-removal-display-time-value': duration
+              }
+
+              close_button = show_close ? content_tag(:button, '✕', type: 'button', class: 'flash__message-close', 'aria-label': 'Close') : ''
+              content_tag(:div, class: "flash__message --#{type}", data: data_attrs) do
+                content_tag(:div, message, class: 'flash__message-content') + close_button
+              end
             end
           end.flatten.compact.join.html_safe
 

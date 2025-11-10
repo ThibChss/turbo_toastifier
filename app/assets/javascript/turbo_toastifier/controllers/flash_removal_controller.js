@@ -7,7 +7,8 @@ export default class FlashRemovalController extends BaseController {
 
   slideInDuration = 400
   displayTimeInMilliseconds = this.displayTimeValue * 1000
-  displayTime = this.slideInDuration + this.displayTimeInMilliseconds
+  displayTime = this.displayTimeValue === 0 ? 0 : this.slideInDuration + this.displayTimeInMilliseconds
+  manuallyDismissed = false
 
   connect() {
     this.#setContainer()
@@ -32,6 +33,13 @@ export default class FlashRemovalController extends BaseController {
 
   pause() {
     if (this.#isPaused()) return
+    // Don't pause if manually dismissed - it should stay removed
+    if (this.manuallyDismissed) return
+
+    // If displayTime is 0, don't pause (message should stay visible until manually dismissed)
+    if (this.displayTime === 0) {
+      return
+    }
 
     const wasRemoving = this.#isRemoving()
 
@@ -62,6 +70,20 @@ export default class FlashRemovalController extends BaseController {
 
   resume() {
     if (!this.#isPaused()) return
+    // Don't resume if manually dismissed - it should stay removed
+    if (this.manuallyDismissed) return
+
+    // If displayTime is 0, don't resume (message should stay visible until manually dismissed)
+    if (this.displayTime === 0) {
+      this.element.classList.remove('paused')
+      if (this.removalTimeout) {
+        clearTimeout(this.removalTimeout)
+        this.removalTimeout = null
+      }
+      this.remainingTime = 0
+      this.#triggerWaitingMessages()
+      return
+    }
 
     if (this.#isRemoving()) {
       this.element.classList.remove('removing')
@@ -84,6 +106,30 @@ export default class FlashRemovalController extends BaseController {
 
     this.#setRemovalTimeout(this.remainingTime)
     this.#triggerWaitingMessages()
+  }
+
+  dismiss() {
+    // Mark as manually dismissed to prevent hover from restarting animation
+    this.manuallyDismissed = true
+
+    // Clear any timeouts/intervals
+    if (this.removalTimeout) {
+      clearTimeout(this.removalTimeout)
+      this.removalTimeout = null
+    }
+
+    if (this.checkInterval) {
+      clearInterval(this.checkInterval)
+      this.checkInterval = null
+    }
+
+    // Remove paused class if present
+    if (this.#isPaused()) {
+      this.element.classList.remove('paused')
+    }
+
+    // Trigger animated removal
+    this.element.classList.add('removing')
   }
 
   remove(event) {
@@ -213,6 +259,11 @@ export default class FlashRemovalController extends BaseController {
   }
 
   #setRemovalTimeout(duration = this.remainingTime) {
+    // If displayTime is 0, don't set any timeout (message should stay until manually dismissed)
+    if (this.displayTime === 0) {
+      return
+    }
+
     let validDuration = duration
 
     if (!this.#isValidDuration(duration) || duration <= 0) {
@@ -318,11 +369,20 @@ export default class FlashRemovalController extends BaseController {
 
     void this.element.offsetHeight
 
-    this.#setRemovalTimeout(this.displayTime)
+    // Only set removal timeout if displayTime > 0 (auto-removal enabled)
+    if (this.displayTime > 0) {
+      this.#setRemovalTimeout(this.displayTime)
+    }
+    // If displayTime is 0, the message will stay visible until manually dismissed
   }
 
   #startRemoval() {
     if (this.#isRemoving()) { return }
+
+    // If displayTime is 0, don't start removal (message should stay until manually dismissed)
+    if (this.displayTime === 0) {
+      return
+    }
 
     if (!this.#shouldStartRemoval()) {
       this.#waitForRemovalQueue()

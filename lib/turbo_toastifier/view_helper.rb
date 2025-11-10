@@ -2,13 +2,16 @@
 
 module TurboToastifier
   module ViewHelper
-    def toastified_flash_tag(limit: 0, duration: 4)
-      render partial: 'turbo_toastifier/flash_container',
-             locals: {
-               flash: flash,
-               limit: limit,
-               duration: duration
-             }
+    # Renders the flash message container using configured defaults.
+    # Configuration is set via TurboToastifier.configure in an initializer.
+    def toastified_flash_tag
+      render partial: 'turbo_toastifier/flash_container'
+    end
+
+    private
+
+    def configuration
+      TurboToastifier.configuration
     end
   end
 end

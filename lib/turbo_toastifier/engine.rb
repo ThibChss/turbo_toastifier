@@ -28,6 +28,11 @@ module TurboToastifier
       end
     end
 
+    # Register generators
+    config.generators do |g|
+      g.test_framework :rspec
+    end
+
     # NOTE: Importmap paths configuration is handled manually by users
     # In Rails 8, importmap.paths is frozen, so we can't modify it automatically.
     # Users should add the path manually in their config/importmap.rb if needed.

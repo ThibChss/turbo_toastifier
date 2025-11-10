@@ -4,11 +4,7 @@
     data:
     {
       controller: "turbo-toastifier-flash-scroll",
-      turbo_toastifier_flash_scroll_limit_value: local_assigns.fetch(:limit, 0)
+      turbo_toastifier_flash_scroll_max_messages_value: configuration.limit
     } do %>
-  <%= render partial: "turbo_toastifier/flash_message",
-             locals: {
-               flash:,
-               duration: local_assigns.fetch(:duration, 4)
-             } %>
+  <%= render partial: "turbo_toastifier/flash_message" %>
 <% end %>
