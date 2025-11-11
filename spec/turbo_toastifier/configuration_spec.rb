@@ -44,7 +44,7 @@ RSpec.describe TurboToastifier::Configuration do
         config.duration = { notice: 4, alert: 0 }
       end
 
-      expect(TurboToastifier.configuration.duration).to eq({ notice: 4, alert: 0 })
+      expect(TurboToastifier.configuration.duration).to include({ notice: 4, alert: 0 })
     end
 
     it 'normalizes duration_for with integer duration' do

@@ -15,7 +15,7 @@ RSpec.describe TurboToastifier::InstallGenerator do
   end
 
   after do
-    FileUtils.rm_rf(destination_root) if File.exist?(destination_root)
+    FileUtils.rm_rf(destination_root)
   end
 
   describe 'generated files' do
