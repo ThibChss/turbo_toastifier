@@ -35,12 +35,12 @@ class TestController < ActionController::Base
   end
 
   def new_action
-    flash_turbo_frame(component: :index, notice: 'Frame action')
+    flash_turbo_frame(component: :index, notice: 'Frame action', fallback: { path: '/posts' })
   end
 
   def turbo_frame_action
     request.headers['Turbo-Frame'] = 'test-frame'
-    flash_turbo_frame(component: :index, notice: 'Frame action')
+    flash_turbo_frame(component: :index, notice: 'Frame action', fallback: { path: '/posts' })
   end
 
   def invalid_schedule
@@ -122,7 +122,7 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
       routes.draw { get 'invalid_schedule' => 'test#invalid_schedule' }
       expect do
         get :invalid_schedule
-      end.to raise_error(TurboToastifier::Controller::UnknownScheduleError, 'Unknown schedule: invalid')
+      end.to raise_error(TurboToastifier::Flash::Preparator::UnknownScheduleError, 'Unknown schedule: invalid')
     end
   end
 
@@ -218,11 +218,10 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
       allow(controller).to receive(:render).and_return('')
       # Call the method directly to avoid template lookup
       controller.instance_eval do
-        flash_render(:index, notice: 'Success', alert: 'Error', warning: 'Warning')
+        flash_render(:index, notice: 'Success', alert: 'Error')
       end
       expect(flash.now[:notice]).to eq(['Success'])
       expect(flash.now[:alert]).to eq(['Error'])
-      expect(flash.now[:warning]).to eq(['Warning'])
     end
   end
 
@@ -304,8 +303,9 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
         allow(controller).to receive(:respond_to).and_yield(format_double)
 
         # Call the method directly to avoid template lookup
+        # Fallback is required even for turbo_frame_request
         controller.instance_eval do
-          flash_turbo_frame(component: :index, notice: 'Frame action')
+          flash_turbo_frame(component: :index, notice: 'Frame action', fallback: { path: '/posts' })
         end
 
         # flash_render extracts notice from kwargs and sets it in flash
@@ -319,8 +319,9 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
         allow(controller).to receive(:render).and_return('')
         allow(controller).to receive(:respond_to).and_yield(double(html: '', turbo_stream: ''))
         # Call the method directly instead of through HTTP request to avoid template lookup
+        # Fallback is required even for turbo_frame_request
         controller.instance_eval do
-          flash_turbo_frame(notice: 'Test')
+          flash_turbo_frame(notice: 'Test', fallback: { path: '/posts' })
         end
         expect(controller).to have_received(:flash_render)
       end
@@ -354,9 +355,25 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
             )
           end
         end
+        # Empty string is not present, so validation fails before path validation
         expect do
           get :new_action
-        end.to raise_error(ArgumentError, 'No redirect path given')
+        end.to raise_error(ArgumentError, 'No fallback path or component given')
+      end
+
+      it 'raises ArgumentError when redirect path is nil' do
+        controller.instance_eval do
+          def new_action
+            flash_turbo_frame(
+              notice: 'Test',
+              fallback: { action: :redirect, path: nil }
+            )
+          end
+        end
+        # Nil path is not present, so validation fails
+        expect do
+          get :new_action
+        end.to raise_error(ArgumentError, 'No fallback path or component given')
       end
 
       it 'raises ArgumentError when redirect has component' do
@@ -400,54 +417,17 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
       end
 
       it 'raises ArgumentError for unknown fallback action' do
+        # The invalid_fallback action provides an invalid action, but we need a path/component
+        # for the initial validation to pass, then it will fail on the unknown action
+        controller.instance_eval do
+          def invalid_fallback
+            flash_turbo_frame(fallback: { action: :invalid, path: '/posts' })
+          end
+        end
         expect do
           get :invalid_fallback
         end.to raise_error(ArgumentError, 'Unknown action: invalid')
       end
-    end
-  end
-
-  describe '#flash_types' do
-    it 'returns fallback default types when ApplicationController._flash_types is not available' do
-      # When ApplicationController doesn't exist or _flash_types is not available,
-      # we fall back to DEFAULT_FLASH_TYPES
-      expect(controller.send(:flash_types)).to contain_exactly(:notice, :alert, :warning)
-    end
-
-    it 'returns Rails default types when ApplicationController exists but no custom types are added' do
-      # Define ApplicationController if it doesn't exist
-      unless defined?(ApplicationController)
-        Object.const_set(:ApplicationController, Class.new(ActionController::Base))
-      end
-
-      # Clear the cached value
-      controller.instance_variable_set(:@flash_types, nil)
-
-      # Rails default flash types are :notice and :alert
-      expected_types = ApplicationController.send(:_flash_types)
-      expect(controller.send(:flash_types)).to eq(expected_types)
-      expect(controller.send(:flash_types)).to include(:notice, :alert)
-    end
-
-    it 'returns all types from ApplicationController._flash_types including custom ones added via add_flash_types' do
-      # Define ApplicationController if it doesn't exist
-      unless defined?(ApplicationController)
-        Object.const_set(:ApplicationController, Class.new(ActionController::Base))
-      end
-
-      # Use Rails' add_flash_types to add custom types
-      ApplicationController.add_flash_types :success, :error, :warning
-
-      # Clear the cached value
-      controller.instance_variable_set(:@flash_types, nil)
-
-      # _flash_types returns all types: default (notice, alert) + custom (success, error, warning)
-      expected_types = ApplicationController.send(:_flash_types)
-      expect(controller.send(:flash_types)).to eq(expected_types)
-      expect(controller.send(:flash_types)).to include(:notice, :alert, :success, :error, :warning)
-
-      # Clean up - reset flash types
-      ApplicationController.instance_variable_set(:@_flash_types, nil)
     end
   end
 
@@ -474,7 +454,17 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
     before do
       routes.draw { get 'posts' => 'test#index' }
       # Add 'error' to flash types for these tests
-      allow(controller).to receive(:flash_types).and_return(%i[notice alert warning error])
+      # Define ApplicationController if it doesn't exist
+      unless defined?(ApplicationController)
+        Object.const_set(:ApplicationController, Class.new(ActionController::Base))
+      end
+      # Use Rails' add_flash_types to add error type
+      ApplicationController.add_flash_types :error
+    end
+
+    after do
+      # Clean up - reset flash types
+      ApplicationController.instance_variable_set(:@_flash_types, nil) if defined?(ApplicationController)
     end
 
     it 'extracts errors from ActiveRecord objects' do
