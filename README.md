@@ -90,6 +90,18 @@ end
 - Once manually dismissed, hover will not restart the animation
 - This is useful for important messages that users should explicitly acknowledge
 
+#### `dismiss` (Symbol)
+- Controls how users can dismiss flash messages
+- **`:button`** (default): Only the close button (✕) can dismiss messages
+- **`:click`**: Click anywhere on the message to dismiss
+  - Clicking on links or buttons inside the message will NOT dismiss it
+  - The close button is hidden when using `:click` mode (unless `duration` is 0)
+- Examples:
+  ```ruby
+  config.dismiss = :button  # Only close button (default)
+  config.dismiss = :click   # Click anywhere to dismiss
+  ```
+
 ### 3. Add the flash container to your layout
 
 In your main layout file (usually `app/views/layouts/application.html.erb`), add the flash tag:

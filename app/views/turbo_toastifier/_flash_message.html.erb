@@ -10,13 +10,14 @@
       aria-label="<%= flash_type.to_s.humanize %> message"
       data-controller="turbo-toastifier-flash-removal"
       data-turbo-toastifier-flash-removal-display-time-value="<%= configuration.duration_for(flash_type) %>"
-      data-action="animationend->turbo-toastifier-flash-removal#remove mouseenter->turbo-toastifier-flash-removal#pause mouseleave->turbo-toastifier-flash-removal#resume"
+      data-turbo-toastifier-flash-removal-dismiss-mode-value="<%= configuration.dismiss.to_sym %>"
+      data-action="<%= actions %>"
     >
       <div class="flash__message-content">
         <%= h(message) %>
       </div>
 
-      <% if configuration.duration_for(flash_type).zero? %>
+      <% if should_show_close_button?(flash_type) %>
         <button
           type="button"
           class="flash__message-close"

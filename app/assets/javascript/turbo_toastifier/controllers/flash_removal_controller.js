@@ -2,7 +2,8 @@ import { Controller as BaseController } from '@hotwired/stimulus'
 
 export default class FlashRemovalController extends BaseController {
   static values = {
-    displayTime: { type: Number, default: 4 }
+    displayTime: { type: Number, default: 4 },
+    dismissMode: { type: String, default: 'button' }
   }
 
   slideInDuration = 400
@@ -70,10 +71,8 @@ export default class FlashRemovalController extends BaseController {
 
   resume() {
     if (!this.#isPaused()) return
-    // Don't resume if manually dismissed - it should stay removed
     if (this.manuallyDismissed) return
 
-    // If displayTime is 0, don't resume (message should stay visible until manually dismissed)
     if (this.displayTime === 0) {
       this.element.classList.remove('paused')
       if (this.removalTimeout) {
@@ -109,10 +108,8 @@ export default class FlashRemovalController extends BaseController {
   }
 
   dismiss() {
-    // Mark as manually dismissed to prevent hover from restarting animation
     this.manuallyDismissed = true
 
-    // Clear any timeouts/intervals
     if (this.removalTimeout) {
       clearTimeout(this.removalTimeout)
       this.removalTimeout = null
@@ -123,13 +120,28 @@ export default class FlashRemovalController extends BaseController {
       this.checkInterval = null
     }
 
-    // Remove paused class if present
     if (this.#isPaused()) {
       this.element.classList.remove('paused')
     }
 
-    // Trigger animated removal
     this.element.classList.add('removing')
+  }
+
+  handleClick(event) {
+    if (this.dismissModeValue !== 'click') {
+      return
+    }
+
+    if (event.target.closest('.flash__message-close')) {
+      return
+    }
+
+    if (event.target.closest('a, button')) {
+      return
+    }
+
+    // Dismiss the message
+    this.dismiss()
   }
 
   remove(event) {
@@ -259,7 +271,6 @@ export default class FlashRemovalController extends BaseController {
   }
 
   #setRemovalTimeout(duration = this.remainingTime) {
-    // If displayTime is 0, don't set any timeout (message should stay until manually dismissed)
     if (this.displayTime === 0) {
       return
     }
@@ -369,17 +380,14 @@ export default class FlashRemovalController extends BaseController {
 
     void this.element.offsetHeight
 
-    // Only set removal timeout if displayTime > 0 (auto-removal enabled)
     if (this.displayTime > 0) {
       this.#setRemovalTimeout(this.displayTime)
     }
-    // If displayTime is 0, the message will stay visible until manually dismissed
   }
 
   #startRemoval() {
     if (this.#isRemoving()) { return }
 
-    // If displayTime is 0, don't start removal (message should stay until manually dismissed)
     if (this.displayTime === 0) {
       return
     }

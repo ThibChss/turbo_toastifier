@@ -71,6 +71,7 @@ RSpec.describe TurboToastifier::Configuration do
       # Reset to defaults
       TurboToastifier.configuration.limit = 0
       TurboToastifier.configuration.duration = 4
+      TurboToastifier.configuration.dismiss = :button
     end
 
     it 'has default limit of 0' do
@@ -80,6 +81,67 @@ RSpec.describe TurboToastifier::Configuration do
     it 'has default duration of 4' do
       expect(TurboToastifier.configuration.duration).to eq({ default: 4 })
       expect(TurboToastifier.configuration.duration_for(:notice)).to eq(4)
+    end
+
+    it 'has default dismiss of :button' do
+      expect(TurboToastifier.configuration.dismiss.button?).to be true
+      expect(TurboToastifier.configuration.dismiss.click?).to be false
+      expect(TurboToastifier.configuration.dismiss.to_sym).to eq(:button)
+    end
+  end
+
+  describe 'dismiss configuration' do
+    it 'allows setting dismiss to :button' do
+      TurboToastifier.configure do |config|
+        config.dismiss = :button
+      end
+
+      expect(TurboToastifier.configuration.dismiss.button?).to be true
+      expect(TurboToastifier.configuration.dismiss.click?).to be false
+      expect(TurboToastifier.configuration.dismiss.to_sym).to eq(:button)
+    end
+
+    it 'allows setting dismiss to :click' do
+      TurboToastifier.configure do |config|
+        config.dismiss = :click
+      end
+
+      expect(TurboToastifier.configuration.dismiss.button?).to be false
+      expect(TurboToastifier.configuration.dismiss.click?).to be true
+      expect(TurboToastifier.configuration.dismiss.to_sym).to eq(:click)
+    end
+
+    it 'accepts string values and converts to symbol' do
+      TurboToastifier.configure do |config|
+        config.dismiss = 'click'
+      end
+
+      expect(TurboToastifier.configuration.dismiss.click?).to be true
+      expect(TurboToastifier.configuration.dismiss.to_sym).to eq(:click)
+    end
+
+    it 'allows using dismiss.click? method' do
+      TurboToastifier.configure do |config|
+        config.dismiss = :click
+      end
+
+      expect(TurboToastifier.configuration.dismiss.click?).to be true
+    end
+
+    it 'allows using dismiss.button? method' do
+      TurboToastifier.configure do |config|
+        config.dismiss = :button
+      end
+
+      expect(TurboToastifier.configuration.dismiss.button?).to be true
+    end
+
+    it 'raises ArgumentError for invalid dismiss mode' do
+      expect do
+        TurboToastifier.configure do |config|
+          config.dismiss = :invalid
+        end
+      end.to raise_error(ArgumentError, 'dismiss must be one of: button, click')
     end
   end
 end

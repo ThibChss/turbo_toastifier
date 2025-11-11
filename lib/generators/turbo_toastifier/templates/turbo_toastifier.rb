@@ -17,7 +17,7 @@ TurboToastifier.configure do |config|
   # Example:
   #   config.limit = 5  # Only show 5 messages at a time
   #   config.limit = 0  # Show all messages (unlimited)
-  config.limit = 0
+  # config.limit = 0
 
   # Display duration in seconds, or a hash of flash_type => duration
   #
@@ -45,5 +45,26 @@ TurboToastifier.configure do |config|
   #     success: 5,  # Auto-remove after 5 seconds
   #     error: 0     # Manual dismissal required
   #   }
-  config.duration = 4
+  # config.duration = 4
+
+  # Dismiss mode for flash messages
+  #
+  # Controls how users can dismiss messages:
+  #   - :button (default): Only the close button (✕) can dismiss messages
+  #   - :click: Click anywhere on the message to dismiss
+  #
+  # When set to :click:
+  #   - Users can click anywhere on the message to dismiss it
+  #   - Clicking on links or buttons inside the message will NOT dismiss it
+  #   - The close button is hidden (unless duration is 0)
+  #
+  # When set to :button:
+  #   - Only the close button can dismiss messages
+  #   - Close button appears when duration is 0 (manual dismissal required)
+  #
+  # Examples:
+  #   config.dismiss = :button  # Only close button (default)
+  #   config.dismiss = :click   # Click anywhere to dismiss
+  #
+  # config.dismiss = :button
 end
