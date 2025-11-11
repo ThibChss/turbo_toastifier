@@ -450,4 +450,132 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
       ApplicationController.instance_variable_set(:@_flash_types, nil)
     end
   end
+
+  describe 'ActiveRecord error extraction' do
+    # Mock ActiveRecord object with errors
+    let(:mock_record) do
+      errors = double('Errors')
+      allow(errors).to receive(:to_hash).with(full_messages: true).and_return(
+        {
+          email: ['Email is invalid', 'Email is required'],
+          password: ['Password is too short'],
+          name: ['Name is required']
+        }
+      )
+      record = double('Record')
+      # Handle respond_to? for any method, defaulting to false except for :errors
+      allow(record).to receive(:respond_to?) do |method|
+        method == :errors
+      end
+      allow(record).to receive(:errors).and_return(errors)
+      record
+    end
+
+    before do
+      routes.draw { get 'posts' => 'test#index' }
+      # Add 'error' to toast types for these tests
+      allow(controller).to receive(:toast_types).and_return(%i[notice alert warning error])
+    end
+
+    it 'extracts errors from ActiveRecord objects' do
+      record = mock_record
+      controller.instance_eval do
+        toast(:error, record)
+      end
+      # Errors should be extracted and flattened
+      expect(flash.now[:error]).to be_an(Array)
+      expect(flash.now[:error]).to include('Email is invalid', 'Email is required', 'Password is too short', 'Name is required')
+    end
+
+    it 'excludes specified error fields via toastified_render' do
+      record = mock_record
+      allow(controller).to receive(:render).and_return('')
+      format_double = double('Format')
+      allow(format_double).to receive(:html).and_yield
+      allow(format_double).to receive(:turbo_stream).and_yield
+      allow(controller).to receive(:respond_to).and_yield(format_double)
+      turbo_stream_double = double('TurboStream')
+      allow(turbo_stream_double).to receive(:append).and_return('<turbo-stream></turbo-stream>')
+      allow(controller).to receive(:turbo_stream).and_return(turbo_stream_double)
+
+      controller.instance_eval do
+        toastified_render(:index, error: record, error_exceptions: %i[email password])
+      end
+      # Only name errors should be included
+      expect(flash.now[:error]).to be_an(Array)
+      expect(flash.now[:error]).to include('Name is required')
+      expect(flash.now[:error]).not_to include('Email is invalid', 'Email is required', 'Password is too short')
+    end
+
+    it 'handles non-ActiveRecord objects normally' do
+      controller.instance_eval do
+        toast(:notice, 'Regular message')
+      end
+      expect(flash.now[:notice]).to eq(['Regular message'])
+    end
+
+    it 'handles mixed messages (ActiveRecord and strings)' do
+      record = mock_record
+      controller.instance_eval do
+        toast(:error, record, 'Additional error message')
+      end
+      expect(flash.now[:error]).to be_an(Array)
+      expect(flash.now[:error]).to include('Email is invalid', 'Email is required', 'Password is too short', 'Name is required', 'Additional error message')
+    end
+
+    it 'handles empty errors hash' do
+      empty_errors = double('Errors')
+      allow(empty_errors).to receive(:to_hash).with(full_messages: true).and_return({})
+      empty_record = double('Record')
+      allow(empty_record).to receive(:respond_to?) do |method|
+        method == :errors
+      end
+      allow(empty_record).to receive(:errors).and_return(empty_errors)
+
+      controller.instance_eval do
+        toast(:error, empty_record)
+      end
+      # No errors should be added (empty array is filtered out)
+      expect(flash.now[:error]).to be_nil
+    end
+
+    it 'handles exceptions with string keys' do
+      record = mock_record
+      allow(controller).to receive(:render).and_return('')
+      format_double = double('Format')
+      allow(format_double).to receive(:html).and_yield
+      allow(format_double).to receive(:turbo_stream).and_yield
+      allow(controller).to receive(:respond_to).and_yield(format_double)
+      turbo_stream_double = double('TurboStream')
+      allow(turbo_stream_double).to receive(:append).and_return('<turbo-stream></turbo-stream>')
+      allow(controller).to receive(:turbo_stream).and_return(turbo_stream_double)
+
+      controller.instance_eval do
+        toastified_render(:index, error: record, error_exceptions: ['email', 'password'])
+      end
+      # Should work with string keys too
+      expect(flash.now[:error]).to be_an(Array)
+      expect(flash.now[:error]).to include('Name is required')
+      expect(flash.now[:error]).not_to include('Email is invalid', 'Email is required', 'Password is too short')
+    end
+
+    it 'works with alert type as well' do
+      record = mock_record
+      allow(controller).to receive(:render).and_return('')
+      format_double = double('Format')
+      allow(format_double).to receive(:html).and_yield
+      allow(format_double).to receive(:turbo_stream).and_yield
+      allow(controller).to receive(:respond_to).and_yield(format_double)
+      turbo_stream_double = double('TurboStream')
+      allow(turbo_stream_double).to receive(:append).and_return('<turbo-stream></turbo-stream>')
+      allow(controller).to receive(:turbo_stream).and_return(turbo_stream_double)
+
+      controller.instance_eval do
+        toastified_render(:index, alert: record, alert_exceptions: [:email])
+      end
+      expect(flash.now[:alert]).to be_an(Array)
+      expect(flash.now[:alert]).to include('Password is too short', 'Name is required')
+      expect(flash.now[:alert]).not_to include('Email is invalid', 'Email is required')
+    end
+  end
 end

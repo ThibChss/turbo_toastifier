@@ -18,23 +18,8 @@ module TurboToastifier
     private_constant :DEFAULT_TOAST_TYPES,
                      :DEFAULT_FALLBACK
 
-    def toast_types
-      @toast_types ||=
-        if defined?(ApplicationController) && ApplicationController.respond_to?(:_flash_types, true)
-          ApplicationController.send(:_flash_types)
-        else
-          DEFAULT_TOAST_TYPES
-        end
-    end
-
-    private
-
-    def toast(type, *messages, schedule: :now)
-      messages = Array.wrap(messages).compact
-      return if messages.blank?
-
-      store = toast_store(schedule)
-      store[type] = Array.wrap(store[type]).push(*messages)
+    def toast(type, *messages, schedule: :now, exceptions: [])
+      generate_toast(type, *messages, schedule:, exceptions:)
     end
 
     def toastified_render(component = nil, **kwargs)
@@ -85,16 +70,27 @@ module TurboToastifier
       end
     end
 
-    protected
+    private
 
     def extract_and_set_toasts!(schedule, options)
       toasts = options.slice(*toast_types).compact_blank
+      exceptions = extract_exceptions(options)
 
-      set_toasts(schedule, toasts) if toasts.present?
+      set_toasts(schedule, toasts, exceptions) if toasts.present?
     end
 
-    def set_toasts(schedule, toasts)
-      toasts.each { |type, message| toast(type, *Array.wrap(message), schedule:) }
+    def set_toasts(schedule, toasts, exceptions = {})
+      toasts.each do |type, message|
+        generate_toast(type, *Array.wrap(message), schedule:, exceptions: exceptions[type] || [])
+      end
+    end
+
+    def extract_exceptions(options, exceptions: {})
+      toast_types.each do |type|
+        exceptions[type] = Array.wrap(options[:"#{type}_exceptions"]) if options.key?(:"#{type}_exceptions")
+      end
+
+      exceptions
     end
 
     def toast_store(schedule)
@@ -104,6 +100,39 @@ module TurboToastifier
       else
         raise UnknownScheduleError, "Unknown schedule: #{schedule}"
       end
+    end
+
+    def toast_types
+      @toast_types ||=
+        if defined?(ApplicationController) && ApplicationController.respond_to?(:_flash_types, true)
+          ApplicationController.send(:_flash_types)
+        else
+          DEFAULT_TOAST_TYPES
+        end
+    end
+
+    def generate_toast(type, *messages, schedule: :now, exceptions: [])
+      messages = Array.wrap(messages).compact
+      return if messages.blank?
+
+      extracted_messages = messages.map do |message|
+        extract_errors_from(message, exceptions:)
+      end.flatten.compact
+
+      return if extracted_messages.blank?
+
+      store = toast_store(schedule)
+      store[type] = Array.wrap(store[type]).push(*extracted_messages)
+    end
+
+    def extract_errors_from(record, exceptions: [])
+      return record unless record.respond_to?(:errors) && record.errors.respond_to?(:to_hash)
+
+      errors = record.errors.to_hash(full_messages: true)
+      return [] if errors.empty?
+
+      excepted_keys = Array.wrap(exceptions).map(&:to_sym)
+      errors.except(*excepted_keys).values.flatten
     end
   end
 end
