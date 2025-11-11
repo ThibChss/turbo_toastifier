@@ -23,24 +23,24 @@ class TestController < ActionController::Base
   end
 
   def create
-    toastified_render(:index, notice: 'Created!')
+    flash_render(:index, notice: 'Created!')
   end
 
   def update
-    toastified_redirect('/posts', notice: 'Updated!')
+    flash_redirect('/posts', notice: 'Updated!')
   end
 
   def destroy
-    toastified_redirect(nil, notice: 'Deleted!')
+    flash_redirect(nil, notice: 'Deleted!')
   end
 
   def new_action
-    toastified_turbo_frame(component: :index, notice: 'Frame action')
+    flash_turbo_frame(component: :index, notice: 'Frame action')
   end
 
   def turbo_frame_action
     request.headers['Turbo-Frame'] = 'test-frame'
-    toastified_turbo_frame(component: :index, notice: 'Frame action')
+    flash_turbo_frame(component: :index, notice: 'Frame action')
   end
 
   def invalid_schedule
@@ -48,7 +48,7 @@ class TestController < ActionController::Base
   end
 
   def invalid_fallback
-    toastified_turbo_frame(fallback: { action: :invalid })
+    flash_turbo_frame(fallback: { action: :invalid })
   end
 end
 
@@ -126,7 +126,7 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
     end
   end
 
-  describe '#toastified_render' do
+  describe '#flash_render' do
     before do
       routes.draw { get 'create' => 'test#create' }
       # Mock turbo_stream helper
@@ -144,7 +144,7 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
       allow(controller).to receive(:render).and_return('')
       # Call the method directly to avoid template lookup
       controller.instance_eval do
-        toastified_render(:index, notice: 'Created!')
+        flash_render(:index, notice: 'Created!')
       end
       expect(flash.now[:notice]).to eq(['Created!'])
     end
@@ -153,9 +153,9 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
       allow(controller).to receive(:render).and_return('')
       # Call the method directly to avoid template lookup
       controller.instance_eval do
-        toastified_render(:index, notice: 'Created!')
+        flash_render(:index, notice: 'Created!')
       end
-      # extract_and_set_toasts! extracts notice to flash, but kwargs still contains it
+      # process_flash_messages! extracts notice to flash, but kwargs still contains it
       # So render is called with notice in kwargs (this is expected behavior)
       expect(controller).to have_received(:render).with(:index, hash_including(notice: 'Created!'))
       # Verify notice was also set in flash
@@ -179,7 +179,7 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
 
       allow(controller).to receive(:render).and_return('')
       controller.instance_eval do
-        toastified_render(phlex_component, notice: 'Success!')
+        flash_render(phlex_component, notice: 'Success!')
       end
 
       expect(controller).to have_received(:render).with(phlex_component, hash_including(notice: 'Success!'))
@@ -204,7 +204,7 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
       allow(controller).to receive(:respond_to).and_yield(format_double)
 
       controller.instance_eval do
-        toastified_render(notice: 'Success!')
+        flash_render(notice: 'Success!')
       end
 
       # Only turbo_stream format is executed when component is nil
@@ -218,7 +218,7 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
       allow(controller).to receive(:render).and_return('')
       # Call the method directly to avoid template lookup
       controller.instance_eval do
-        toastified_render(:index, notice: 'Success', alert: 'Error', warning: 'Warning')
+        flash_render(:index, notice: 'Success', alert: 'Error', warning: 'Warning')
       end
       expect(flash.now[:notice]).to eq(['Success'])
       expect(flash.now[:alert]).to eq(['Error'])
@@ -226,7 +226,7 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
     end
   end
 
-  describe '#toastified_redirect' do
+  describe '#flash_redirect' do
     before do
       routes.draw do
         get 'update' => 'test#update'
@@ -242,7 +242,7 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
 
     it 'sets toast messages in flash (not flash.now)' do
       get :update
-      # After redirect, flash[:notice] should be set (toastified_redirect uses schedule: :later)
+      # After redirect, flash[:notice] should be set (flash_redirect uses schedule: :later)
       expect(flash[:notice]).to be_present
       expect(flash[:notice]).to include('Updated!')
       # The key behavior is that it's in flash (for next request), not flash.now (for current request)
@@ -258,7 +258,7 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
     it 'raises ArgumentError when path is blank' do
       expect do
         controller.instance_eval do
-          toastified_redirect('', notice: 'Test')
+          flash_redirect('', notice: 'Test')
         end
         get :destroy
       end.to raise_error(ArgumentError, 'No redirect path given')
@@ -266,14 +266,14 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
 
     it 'passes through additional kwargs' do
       # Verify the method exists (it's private)
-      expect(controller.send(:respond_to?, :toastified_redirect, true)).to be true
+      expect(controller.send(:respond_to?, :flash_redirect, true)).to be true
       # Test that redirect works with kwargs
       get :update
       expect(response).to have_http_status(:redirect)
     end
   end
 
-  describe '#toastified_turbo_frame' do
+  describe '#flash_turbo_frame' do
     before do
       routes.draw do
         get 'new_action' => 'test#new_action'
@@ -292,8 +292,8 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
         allow(controller).to receive(:action_has_layout?).and_return(false)
       end
 
-      it 'calls toastified_render with component when present' do
-        # Allow toastified_render to actually run (don't stub it completely)
+      it 'calls flash_render with component when present' do
+        # Allow flash_render to actually run (don't stub it completely)
         allow(controller).to receive(:render).and_return('')
         turbo_stream_double = double('TurboStream')
         allow(turbo_stream_double).to receive(:append).and_return('<turbo-stream></turbo-stream>')
@@ -305,24 +305,24 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
 
         # Call the method directly to avoid template lookup
         controller.instance_eval do
-          toastified_turbo_frame(component: :index, notice: 'Frame action')
+          flash_turbo_frame(component: :index, notice: 'Frame action')
         end
 
-        # toastified_render extracts notice from kwargs and sets it in flash
+        # flash_render extracts notice from kwargs and sets it in flash
         expect(flash.now[:notice]).to eq(['Frame action'])
-        # Verify render was called through toastified_render
+        # Verify render was called through flash_render
         expect(controller).to have_received(:render).at_least(:once)
       end
 
-      it 'calls toastified_render if component is not present' do
-        allow(controller).to receive(:toastified_render).and_return('')
+      it 'calls flash_render if component is not present' do
+        allow(controller).to receive(:flash_render).and_return('')
         allow(controller).to receive(:render).and_return('')
         allow(controller).to receive(:respond_to).and_yield(double(html: '', turbo_stream: ''))
         # Call the method directly instead of through HTTP request to avoid template lookup
         controller.instance_eval do
-          toastified_turbo_frame(notice: 'Test')
+          flash_turbo_frame(notice: 'Test')
         end
-        expect(controller).to have_received(:toastified_render)
+        expect(controller).to have_received(:flash_render)
       end
     end
 
@@ -335,7 +335,7 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
         # The default fallback requires a path, so we need to provide one
         controller.instance_eval do
           def new_action
-            toastified_turbo_frame(
+            flash_turbo_frame(
               notice: 'Frame action',
               fallback: { path: '/posts' }
             )
@@ -348,7 +348,7 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
       it 'raises ArgumentError when redirect path is blank' do
         controller.instance_eval do
           def new_action
-            toastified_turbo_frame(
+            flash_turbo_frame(
               notice: 'Test',
               fallback: { action: :redirect, path: '' }
             )
@@ -362,7 +362,7 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
       it 'raises ArgumentError when redirect has component' do
         controller.instance_eval do
           def new_action
-            toastified_turbo_frame(
+            flash_turbo_frame(
               notice: 'Test',
               fallback: { action: :redirect, path: '/posts', component: :index }
             )
@@ -387,15 +387,15 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
         allow(format_double).to receive(:turbo_stream).and_yield
         allow(controller).to receive(:respond_to).and_yield(format_double)
         # Call the method directly to avoid template lookup
-        # Note: notice needs to be in fallback hash to be extracted by toastified_render
+        # Note: notice needs to be in fallback hash to be extracted by flash_render
         controller.instance_eval do
-          toastified_turbo_frame(
+          flash_turbo_frame(
             fallback: { action: :render, component: :index, notice: 'Test' }
           )
         end
-        # toastified_render extracts notice from kwargs and sets it in flash
+        # flash_render extracts notice from kwargs and sets it in flash
         expect(flash.now[:notice]).to eq(['Test'])
-        # Verify render was called through toastified_render
+        # Verify render was called through flash_render
         expect(controller).to have_received(:render).at_least(:once)
       end
 
@@ -407,11 +407,11 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
     end
   end
 
-  describe '#toast_types' do
+  describe '#flash_types' do
     it 'returns fallback default types when ApplicationController._flash_types is not available' do
       # When ApplicationController doesn't exist or _flash_types is not available,
-      # we fall back to DEFAULT_TOAST_TYPES
-      expect(controller.send(:toast_types)).to contain_exactly(:notice, :alert, :warning)
+      # we fall back to DEFAULT_FLASH_TYPES
+      expect(controller.send(:flash_types)).to contain_exactly(:notice, :alert, :warning)
     end
 
     it 'returns Rails default types when ApplicationController exists but no custom types are added' do
@@ -421,12 +421,12 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
       end
 
       # Clear the cached value
-      controller.instance_variable_set(:@toast_types, nil)
+      controller.instance_variable_set(:@flash_types, nil)
 
       # Rails default flash types are :notice and :alert
       expected_types = ApplicationController.send(:_flash_types)
-      expect(controller.send(:toast_types)).to eq(expected_types)
-      expect(controller.send(:toast_types)).to include(:notice, :alert)
+      expect(controller.send(:flash_types)).to eq(expected_types)
+      expect(controller.send(:flash_types)).to include(:notice, :alert)
     end
 
     it 'returns all types from ApplicationController._flash_types including custom ones added via add_flash_types' do
@@ -439,12 +439,12 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
       ApplicationController.add_flash_types :success, :error, :warning
 
       # Clear the cached value
-      controller.instance_variable_set(:@toast_types, nil)
+      controller.instance_variable_set(:@flash_types, nil)
 
       # _flash_types returns all types: default (notice, alert) + custom (success, error, warning)
       expected_types = ApplicationController.send(:_flash_types)
-      expect(controller.send(:toast_types)).to eq(expected_types)
-      expect(controller.send(:toast_types)).to include(:notice, :alert, :success, :error, :warning)
+      expect(controller.send(:flash_types)).to eq(expected_types)
+      expect(controller.send(:flash_types)).to include(:notice, :alert, :success, :error, :warning)
 
       # Clean up - reset flash types
       ApplicationController.instance_variable_set(:@_flash_types, nil)
@@ -473,8 +473,8 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
 
     before do
       routes.draw { get 'posts' => 'test#index' }
-      # Add 'error' to toast types for these tests
-      allow(controller).to receive(:toast_types).and_return(%i[notice alert warning error])
+      # Add 'error' to flash types for these tests
+      allow(controller).to receive(:flash_types).and_return(%i[notice alert warning error])
     end
 
     it 'extracts errors from ActiveRecord objects' do
@@ -487,7 +487,7 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
       expect(flash.now[:error]).to include('Email is invalid', 'Email is required', 'Password is too short', 'Name is required')
     end
 
-    it 'excludes specified error fields via toastified_render' do
+    it 'excludes specified error fields via flash_render' do
       record = mock_record
       allow(controller).to receive(:render).and_return('')
       format_double = double('Format')
@@ -499,7 +499,7 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
       allow(controller).to receive(:turbo_stream).and_return(turbo_stream_double)
 
       controller.instance_eval do
-        toastified_render(:index, error: record, error_exceptions: %i[email password])
+        flash_render(:index, error: record, error_exceptions: %i[email password])
       end
       # Only name errors should be included
       expect(flash.now[:error]).to be_an(Array)
@@ -551,7 +551,7 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
       allow(controller).to receive(:turbo_stream).and_return(turbo_stream_double)
 
       controller.instance_eval do
-        toastified_render(:index, error: record, error_exceptions: ['email', 'password'])
+        flash_render(:index, error: record, error_exceptions: ['email', 'password'])
       end
       # Should work with string keys too
       expect(flash.now[:error]).to be_an(Array)
@@ -571,7 +571,7 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
       allow(controller).to receive(:turbo_stream).and_return(turbo_stream_double)
 
       controller.instance_eval do
-        toastified_render(:index, alert: record, alert_exceptions: [:email])
+        flash_render(:index, alert: record, alert_exceptions: [:email])
       end
       expect(flash.now[:alert]).to be_an(Array)
       expect(flash.now[:alert]).to include('Password is too short', 'Name is required')
