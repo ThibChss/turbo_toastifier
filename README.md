@@ -323,6 +323,25 @@ toast(:notice, 'This appears later', schedule: :later)
 
 ### Styling
 
+#### Option 1: Generate Custom Stylesheet (Recommended for Complete Overrides)
+
+If you want to completely customize the styles, generate a custom stylesheet:
+
+```bash
+rails generate turbo_toastifier:style
+```
+
+This creates `app/assets/stylesheets/turbo_toastifier.scss` with all the default styles that you can customize. After generating, make sure your main stylesheet imports this file instead of the gem's default styles:
+
+```scss
+// In app/assets/stylesheets/application.scss
+@import 'turbo_toastifier';  // This will use your custom styles
+```
+
+**Note:** The generated file includes all default styles, so you can modify them as needed. The file includes helpful comments and examples for common customizations.
+
+#### Option 2: Override Default Styles
+
 You can override the default styles by importing the gem's styles first, then adding your customizations:
 
 ```scss
