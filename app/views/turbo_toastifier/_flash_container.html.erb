@@ -1,6 +1,7 @@
 <%= turbo_frame_tag :flash,
     class: "flash",
     refresh: :morph,
+    aria: { label: "Flash messages" },
     data:
     {
       controller: "turbo-toastifier-flash-scroll",
