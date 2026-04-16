@@ -90,14 +90,14 @@ RSpec.configure do |config|
         locals_hash = options[:locals] || locals
         flash = locals_hash[:flash] || @flash || {}
 
-        if partial_name == 'turbo_toastifier/flash_container'
+        if partial_name == TurboToastifier.configuration.flash_container_partial
           config = TurboToastifier.configuration
           data_attrs = { controller: 'turbo-toastifier-flash-scroll' }
           data_attrs[:'turbo-toastifier-flash-scroll-max-messages-value'] = config.limit
           turbo_frame_tag(:flash, class: 'flash', refresh: :morph, data: data_attrs) do
-            render(partial: 'turbo_toastifier/flash_message', locals: { flash: flash })
+            render(partial: config.flash_message_partial, locals: { flash: flash })
           end
-        elsif partial_name == 'turbo_toastifier/flash_message'
+        elsif partial_name == TurboToastifier.configuration.flash_message_partial
           flash = locals_hash[:flash] || @flash || {}
           config = TurboToastifier.configuration
           flash.map do |type, messages|

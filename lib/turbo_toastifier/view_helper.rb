@@ -9,7 +9,7 @@ module TurboToastifier
     # Renders the flash message container using configured defaults.
     # Configuration is set via TurboToastifier.configure in an initializer.
     def toastified_flash_tag
-      render partial: 'turbo_toastifier/flash_container'
+      render partial: TurboToastifier.configuration.flash_container_partial
     end
   end
 end

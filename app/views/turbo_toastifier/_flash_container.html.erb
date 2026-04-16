@@ -7,5 +7,5 @@
       controller: "turbo-toastifier-flash-scroll",
       turbo_toastifier_flash_scroll_max_messages_value: configuration.limit
     } do %>
-  <%= render partial: "turbo_toastifier/flash_message" %>
+  <%= render partial: configuration.flash_message_partial %>
 <% end %>

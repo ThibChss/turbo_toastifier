@@ -168,6 +168,28 @@ RSpec.describe TurboToastifier::Controller, type: :controller do
       expect(response).to have_http_status(:success)
     end
 
+    it 'uses configured flash_message_partial for turbo_stream.append' do
+      previous_partial = TurboToastifier.configuration.flash_message_partial
+      TurboToastifier.configuration.flash_message_partial = 'shared/custom_toast'
+
+      turbo_stream_double = double('TurboStream')
+      allow(turbo_stream_double).to receive(:append).and_return('<turbo-stream></turbo-stream>')
+      allow(controller).to receive(:turbo_stream).and_return(turbo_stream_double)
+      format_double = double('Format')
+      allow(format_double).to receive(:html).and_yield
+      allow(format_double).to receive(:turbo_stream).and_yield
+      allow(controller).to receive(:respond_to).and_yield(format_double)
+      allow(controller).to receive(:render).and_return('')
+
+      controller.instance_eval do
+        flash_render(:index, notice: 'Created!')
+      end
+
+      expect(turbo_stream_double).to have_received(:append).with(:flash, partial: 'shared/custom_toast')
+    ensure
+      TurboToastifier.configuration.flash_message_partial = previous_partial
+    end
+
     it 'works with Phlex components when component is provided' do
       skip 'Phlex not available' unless defined?(Phlex)
 

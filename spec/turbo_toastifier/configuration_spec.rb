@@ -72,6 +72,8 @@ RSpec.describe TurboToastifier::Configuration do
       TurboToastifier.configuration.limit = 0
       TurboToastifier.configuration.duration = 4
       TurboToastifier.configuration.dismiss = :button
+      TurboToastifier.configuration.flash_message_partial = 'turbo_toastifier/flash_message'
+      TurboToastifier.configuration.flash_container_partial = 'turbo_toastifier/flash_container'
     end
 
     it 'has default limit of 0' do
@@ -87,6 +89,34 @@ RSpec.describe TurboToastifier::Configuration do
       expect(TurboToastifier.configuration.dismiss.button?).to be true
       expect(TurboToastifier.configuration.dismiss.click?).to be false
       expect(TurboToastifier.configuration.dismiss.to_sym).to eq(:button)
+    end
+
+    it 'has default flash partial paths' do
+      expect(TurboToastifier.configuration.flash_message_partial).to eq('turbo_toastifier/flash_message')
+      expect(TurboToastifier.configuration.flash_container_partial).to eq('turbo_toastifier/flash_container')
+    end
+  end
+
+  describe 'flash partial overrides' do
+    after do
+      TurboToastifier.configuration.flash_message_partial = 'turbo_toastifier/flash_message'
+      TurboToastifier.configuration.flash_container_partial = 'turbo_toastifier/flash_container'
+    end
+
+    it 'allows setting flash_message_partial' do
+      TurboToastifier.configure do |config|
+        config.flash_message_partial = 'shared/custom_flash_message'
+      end
+
+      expect(TurboToastifier.configuration.flash_message_partial).to eq('shared/custom_flash_message')
+    end
+
+    it 'allows setting flash_container_partial' do
+      TurboToastifier.configure do |config|
+        config.flash_container_partial = 'shared/custom_flash_container'
+      end
+
+      expect(TurboToastifier.configuration.flash_container_partial).to eq('shared/custom_flash_container')
     end
   end
 

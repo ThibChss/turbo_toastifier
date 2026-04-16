@@ -17,7 +17,7 @@ module TurboToastifier
       end
 
       def flashes
-        turbo_stream.append(:flash, partial: 'turbo_toastifier/flash_message')
+        turbo_stream.append(:flash, partial: TurboToastifier.configuration.flash_message_partial)
       end
     end
   end

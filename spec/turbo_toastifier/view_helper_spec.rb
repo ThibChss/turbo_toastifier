@@ -9,6 +9,8 @@ RSpec.describe TurboToastifier::ViewHelper, type: :helper do
     # Reset configuration to defaults before each test
     TurboToastifier.configuration.limit = 0
     TurboToastifier.configuration.duration = 4
+    TurboToastifier.configuration.flash_message_partial = 'turbo_toastifier/flash_message'
+    TurboToastifier.configuration.flash_container_partial = 'turbo_toastifier/flash_container'
 
     # Setup flash on view context
     @view_context.instance_variable_set(:@flash, flash_messages)

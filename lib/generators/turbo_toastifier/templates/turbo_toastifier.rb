@@ -67,4 +67,21 @@ TurboToastifier.configure do |config|
   #   config.dismiss = :click   # Click anywhere to dismiss
   #
   # config.dismiss = :button
+
+  # View partials for flash markup (optional overrides)
+  #
+  # Point these at your own partials to control layout and styling (Tailwind classes,
+  # custom markup, or a thin ERB wrapper around a Phlex component).
+  #
+  # Your partial receives the same view context as other templates, including
+  # `flash`, plus TurboToastifier helpers: `configuration`, `actions`,
+  # `should_show_close_button?` (from TurboToastifier::ViewHelper).
+  #
+  # When replacing `flash_message_partial`, keep the Stimulus hooks from the default
+  # partial unless you reimplement dismissal: data-controller="turbo-toastifier-flash-removal",
+  # data-turbo-toastifier-flash-removal-display-time-value, data-turbo-toastifier-flash-removal-dismiss-mode-value,
+  # and data-action bound to the `actions` helper on the dismissible root element.
+  #
+  # config.flash_message_partial = 'turbo_toastifier/flash_message'
+  # config.flash_container_partial = 'turbo_toastifier/flash_container'
 end
