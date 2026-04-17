@@ -2,6 +2,8 @@
 //
 // This file contains customizable styles for TurboToastifier flash messages.
 // Run `rails generate turbo_toastifier:style` to regenerate this file.
+// For plain CSS output (Tailwind/cssbundling-friendly), run:
+// `rails generate turbo_toastifier:style --format=css`
 //
 // IMPORTANT: After generating this file, update your main stylesheet to import
 // this file instead of the gem's default styles:

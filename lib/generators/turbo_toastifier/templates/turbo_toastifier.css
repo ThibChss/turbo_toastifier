@@ -1,0 +1,144 @@
+/* TurboToastifier Custom Styles (plain CSS)
+ *
+ * This file contains customizable styles for TurboToastifier flash messages.
+ * Run `rails generate turbo_toastifier:style --format=css` to regenerate this file.
+ *
+ * For Tailwind or cssbundling apps, import this local file from your CSS entrypoint:
+ *
+ *   @import "../stylesheets/turbo_toastifier.css";
+ */
+
+.flash {
+  position: fixed;
+  top: 8.5rem;
+  right: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  max-width: 93%;
+  width: max-content;
+  gap: 10px;
+  z-index: 2000;
+  transition: top 0.3s ease;
+}
+
+.flash.scrolled {
+  top: 1rem;
+}
+
+.flash__message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #333;
+  background: #fff;
+  padding: 0.8rem 1.5rem;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.2px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.06);
+  cursor: default;
+  opacity: 0;
+  transform: translateX(100%);
+  animation: none;
+  position: relative;
+}
+
+.flash__message-content {
+  flex: 1;
+}
+
+.flash__message-close {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.5rem;
+  background: transparent;
+  border: none;
+  color: rgba(0, 0, 0, 0.5);
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  margin: -0.25rem -0.5rem;
+  border-radius: 4px;
+  transition: color 0.2s ease, background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+}
+
+.flash__message-close:hover {
+  color: rgba(0, 0, 0, 0.8);
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.flash__message-close:active {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.flash__message-close:focus {
+  outline: 2px solid rgba(0, 0, 0, 0.2);
+  outline-offset: 2px;
+}
+
+.flash__message.animating {
+  animation: slide-in 0.4s ease-out both;
+}
+
+.flash__message.removing {
+  animation: fade-out-slide 0.3s ease-in forwards;
+}
+
+.flash__message.paused,
+.flash__message.animating.paused,
+.flash__message.removing.paused {
+  animation-play-state: paused;
+}
+
+.flash__message.hidden {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+.flash__message.--notice {
+  border-left: 4px solid #007bff;
+}
+
+.flash__message.--alert {
+  border-left: 4px solid #dc3545;
+}
+
+.flash__message.--warning {
+  border-left: 4px solid #ffc107;
+}
+
+@keyframes slide-in {
+  0% {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fade-out-slide {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
