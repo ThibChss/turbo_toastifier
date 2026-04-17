@@ -52,6 +52,7 @@ TurboToastifier.configure do |config|
   # Controls how users can dismiss messages:
   #   - :button (default): Only the close button (✕) can dismiss messages
   #   - :click: Click anywhere on the message to dismiss
+  #   - :none: No manual dismiss controls (auto-dismiss via duration only)
   #
   # When set to :click:
   #   - Users can click anywhere on the message to dismiss it
@@ -62,9 +63,14 @@ TurboToastifier.configure do |config|
   #   - Only the close button can dismiss messages
   #   - Close button appears when duration is 0 (manual dismissal required)
   #
+  # When set to :none:
+  #   - No close button and no click-to-dismiss behavior
+  #   - Messages are dismissed only by configured duration
+  #
   # Examples:
   #   config.dismiss = :button  # Only close button (default)
   #   config.dismiss = :click   # Click anywhere to dismiss
+  #   config.dismiss = :none    # Duration-only dismissal
   #
   # config.dismiss = :button
 
@@ -75,12 +81,17 @@ TurboToastifier.configure do |config|
   #
   # Your partial receives the same view context as other templates, including
   # `flash`, plus TurboToastifier helpers: `configuration`, `actions`,
-  # `should_show_close_button?` (from TurboToastifier::ViewHelper).
+  # `should_show_close_button?`, `toast_message_container`, and
+  # `toast_message_container_tag` (from TurboToastifier::ViewHelper).
   #
   # When replacing `flash_message_partial`, keep the Stimulus hooks from the default
   # partial unless you reimplement dismissal: data-controller="turbo-toastifier-flash-removal",
   # data-turbo-toastifier-flash-removal-display-time-value, data-turbo-toastifier-flash-removal-dismiss-mode-value,
   # and data-action bound to the `actions` helper on the dismissible root element.
+  # `toast_message_container(flash_type, class: 'your-class')` can be used to get
+  # the default class/role/aria/data attributes and extend them in your partial.
+  # `toast_message_container_tag(flash_type, class: 'your-class') { ... }` wraps
+  # custom content in a div with those default attributes.
   #
   # config.flash_message_partial = 'turbo_toastifier/flash_message'
   # config.flash_container_partial = 'turbo_toastifier/flash_container'

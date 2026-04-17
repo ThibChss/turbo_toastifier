@@ -9,12 +9,78 @@ RSpec.describe TurboToastifier::ViewHelper, type: :helper do
     # Reset configuration to defaults before each test
     TurboToastifier.configuration.limit = 0
     TurboToastifier.configuration.duration = 4
+    TurboToastifier.configuration.dismiss = :button
     TurboToastifier.configuration.flash_message_partial = 'turbo_toastifier/flash_message'
     TurboToastifier.configuration.flash_container_partial = 'turbo_toastifier/flash_container'
 
     # Setup flash on view context
     @view_context.instance_variable_set(:@flash, flash_messages)
     allow(@view_context).to receive(:flash).and_return(flash_messages)
+  end
+
+  describe '#toast_message_container' do
+    it 'returns default attributes for flash message container' do
+      attrs = @view_context.toast_message_container(:notice)
+
+      expect(attrs[:class]).to eq('flash__message --notice')
+      expect(attrs[:role]).to eq('alert')
+      expect(attrs[:aria]).to include(live: 'polite', atomic: 'true', label: 'Notice message')
+      expect(attrs[:data]).to include(
+        controller: 'turbo-toastifier-flash-removal',
+        turbo_toastifier_flash_removal_display_time_value: 4,
+        turbo_toastifier_flash_removal_dismiss_mode_value: :button
+      )
+      expect(attrs[:data][:action]).to include('animationend->turbo-toastifier-flash-removal#remove')
+    end
+
+    it 'merges custom class, aria and data attributes' do
+      attrs = @view_context.toast_message_container(
+        :alert,
+        class: 'my-custom-toast',
+        aria: { label: 'Custom alert message' },
+        data: { testid: 'toast-alert' }
+      )
+
+      expect(attrs[:class]).to eq('flash__message --alert my-custom-toast')
+      expect(attrs[:aria]).to include(live: 'polite', atomic: 'true', label: 'Custom alert message')
+      expect(attrs[:data]).to include(
+        controller: 'turbo-toastifier-flash-removal',
+        turbo_toastifier_flash_removal_display_time_value: 4,
+        turbo_toastifier_flash_removal_dismiss_mode_value: :button,
+        testid: 'toast-alert'
+      )
+    end
+
+    it 'does not include click action when dismiss mode is :none' do
+      TurboToastifier.configuration.dismiss = :none
+      attrs = @view_context.toast_message_container(:notice)
+
+      expect(attrs[:data][:action]).not_to include('click->turbo-toastifier-flash-removal#handleClick')
+    end
+  end
+
+  describe '#toast_message_container_tag' do
+    it 'renders a div with default toast container attributes' do
+      html = @view_context.toast_message_container_tag(:notice, 'Hello')
+
+      expect(html).to include('class="flash__message --notice"')
+      expect(html).to include('role="alert"')
+      expect(html).to include('aria-live="polite"')
+      expect(html).to include('aria-label="Notice message"')
+      expect(html).to include('data-controller="turbo-toastifier-flash-removal"')
+      expect(html).to include('data-turbo-toastifier-flash-removal-display-time-value="4"')
+      expect(html).to include('data-action="animationend-&gt;turbo-toastifier-flash-removal#remove')
+      expect(html).to include('Hello')
+    end
+
+    it 'supports block content and custom class overrides' do
+      html = @view_context.toast_message_container_tag(:alert, class: 'my-custom-toast') do
+        @view_context.content_tag(:span, 'Alert!')
+      end
+
+      expect(html).to include('class="flash__message --alert my-custom-toast"')
+      expect(html).to include('<span>Alert!</span>')
+    end
   end
 
   describe '#toastified_flash_tag' do
@@ -165,6 +231,14 @@ RSpec.describe TurboToastifier::ViewHelper, type: :helper do
 
         expect(result).to include('data-turbo-toastifier-flash-removal-display-time-value')
         expect(result).to match(/display-time-value="4"/)
+      end
+
+      it 'does not show close button when dismiss mode is :none and duration is 0' do
+        TurboToastifier.configuration.dismiss = :none
+        TurboToastifier.configuration.duration = 0
+        result = @view_context.toastified_flash_tag
+
+        expect(result).not_to include('flash__message-close')
       end
     end
   end

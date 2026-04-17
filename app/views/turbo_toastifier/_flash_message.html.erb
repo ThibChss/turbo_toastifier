@@ -2,17 +2,7 @@
   <% Array.wrap(messages).each do |message| %>
     <% next if message.blank? %>
 
-    <div
-      class="flash__message --<%= flash_type %>"
-      role="alert"
-      aria-live="polite"
-      aria-atomic="true"
-      aria-label="<%= flash_type.to_s.humanize %> message"
-      data-controller="turbo-toastifier-flash-removal"
-      data-turbo-toastifier-flash-removal-display-time-value="<%= configuration.duration_for(flash_type) %>"
-      data-turbo-toastifier-flash-removal-dismiss-mode-value="<%= configuration.dismiss.to_sym %>"
-      data-action="<%= actions %>"
-    >
+    <%= toast_message_container_tag(flash_type) do %>
       <div class="flash__message-content">
         <%= h(message) %>
       </div>
@@ -27,6 +17,6 @@
           ✕
         </button>
       <% end %>
-    </div>
+    <% end %>
   <% end %>
 <% end %>

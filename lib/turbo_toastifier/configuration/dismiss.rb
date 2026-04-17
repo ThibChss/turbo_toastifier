@@ -4,6 +4,7 @@ module TurboToastifier
       VALID_MODES = %i[
         button
         click
+        none
       ].freeze
 
       def initialize(mode)

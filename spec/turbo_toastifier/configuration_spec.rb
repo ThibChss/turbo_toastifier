@@ -141,6 +141,17 @@ RSpec.describe TurboToastifier::Configuration do
       expect(TurboToastifier.configuration.dismiss.to_sym).to eq(:click)
     end
 
+    it 'allows setting dismiss to :none' do
+      TurboToastifier.configure do |config|
+        config.dismiss = :none
+      end
+
+      expect(TurboToastifier.configuration.dismiss.button?).to be false
+      expect(TurboToastifier.configuration.dismiss.click?).to be false
+      expect(TurboToastifier.configuration.dismiss.none?).to be true
+      expect(TurboToastifier.configuration.dismiss.to_sym).to eq(:none)
+    end
+
     it 'accepts string values and converts to symbol' do
       TurboToastifier.configure do |config|
         config.dismiss = 'click'
@@ -166,12 +177,20 @@ RSpec.describe TurboToastifier::Configuration do
       expect(TurboToastifier.configuration.dismiss.button?).to be true
     end
 
+    it 'allows using dismiss.none? method' do
+      TurboToastifier.configure do |config|
+        config.dismiss = :none
+      end
+
+      expect(TurboToastifier.configuration.dismiss.none?).to be true
+    end
+
     it 'raises ArgumentError for invalid dismiss mode' do
       expect do
         TurboToastifier.configure do |config|
           config.dismiss = :invalid
         end
-      end.to raise_error(ArgumentError, 'dismiss must be one of: button, click')
+      end.to raise_error(ArgumentError, 'dismiss must be one of: button, click, none')
     end
   end
 end

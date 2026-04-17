@@ -105,11 +105,12 @@ RSpec.configure do |config|
               next if message.blank?
 
               duration = config.duration_for(type)
-              show_close = duration.zero?
+              show_close = duration.zero? && config.dismiss.button?
               data_attrs = {
                 controller: 'turbo-toastifier-flash-removal',
                 action: 'animationend->turbo-toastifier-flash-removal#remove',
-                'turbo-toastifier-flash-removal-display-time-value': duration
+                'turbo-toastifier-flash-removal-display-time-value': duration,
+                'turbo-toastifier-flash-removal-dismiss-mode-value': config.dismiss.to_sym
               }
 
               close_button = show_close ? content_tag(:button, '✕', type: 'button', class: 'flash__message-close', 'aria-label': 'Close') : ''
